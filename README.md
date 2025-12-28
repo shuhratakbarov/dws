@@ -57,7 +57,7 @@ A full-stack digital wallet application demonstrating **microservices architectu
         ▼            ▼             ▼            ▼              ▼
     ┌──────┐     ┌──────┐     ┌────────┐     ┌──────┐    ┌────────────┐
     │ Auth │     │Wallet│     │Customer│     │Ledger│    │Notification│
-    │ 8081 │     │ 8082 │     │ 8083   │     │ 8084 │    │    8085    │
+    │ 8081 │     │ 8082 │     │  8083  │     │ 8084 │    │    8085    │
     └──────┘     └──────┘     └────────┘     └──────┘    └────────────┘
                                       │
                                       ▼
