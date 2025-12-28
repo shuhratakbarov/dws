@@ -1,0 +1,43 @@
+# Production Profile Configuration
+spring:
+  cloud:
+    gateway:
+      globalcors:
+        cors-configurations:
+          '[/**]':
+            allowedOrigins:
+              - "${FRONTEND_URL:https://your-frontend.herokuapp.com}"
+            allowedMethods:
+              - GET
+              - POST
+              - PUT
+              - DELETE
+            allowedHeaders: "*"
+            allowCredentials: true
+
+logging:
+  level:
+    root: WARN
+    org.springframework.cloud.gateway: INFO
+    com.fintech.gateway: INFO
+  pattern:
+    console: '{"timestamp":"%d{ISO8601}","level":"%level","service":"api-gateway","message":"%msg"}%n'
+
+server:
+  error:
+    include-message: never
+    include-stacktrace: never
+  compression:
+    enabled: true
+    mime-types: application/json,text/html,text/plain
+    min-response-size: 1024
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics
+  endpoint:
+    health:
+      show-details: never
+

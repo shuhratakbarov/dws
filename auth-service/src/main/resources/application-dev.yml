@@ -1,0 +1,34 @@
+# Development Profile Configuration
+# Activated by: SPRING_PROFILES_ACTIVE=dev
+
+spring:
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
+
+  datasource:
+    hikari:
+      maximum-pool-size: 5
+      minimum-idle: 2
+
+# Development logging
+logging:
+  level:
+    com.fintech.authservice: DEBUG
+    org.springframework.security: DEBUG
+    org.hibernate.SQL: DEBUG
+
+# JWT - shorter expiration for testing
+jwt:
+  access-token-expiration: 3600000      # 1 hour for dev
+  refresh-token-expiration: 86400000    # 1 day for dev
+
+# Enable Swagger UI in dev
+springdoc:
+  swagger-ui:
+    enabled: true
+

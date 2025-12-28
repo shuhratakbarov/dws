@@ -1,0 +1,19 @@
+# Development Profile Configuration
+spring:
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+
+  mail:
+    host: localhost
+    port: 1025
+
+logging:
+  level:
+    com.fintech.notificationservice: DEBUG
+
+springdoc:
+  swagger-ui:
+    enabled: true
+

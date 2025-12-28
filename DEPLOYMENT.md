@@ -2,11 +2,19 @@
 
 This guide covers deploying the Digital Wallet System to various cloud platforms.
 
+## Table of Contents
+- [Deployment Options](#deployment-options-comparison)
+- [Heroku Deployment (Eco Dynos)](#option-1-heroku-deployment-with-eco-dynos)
+- [Railway Deployment](#option-2-railway-deployment)
+- [Docker Deployment](#option-3-docker-deployment)
+- [Environment Configuration](#environment-configuration)
+- [Production Checklist](#production-checklist)
+
 ## Deployment Options Comparison
 
 | Platform | Monthly Cost | Best For | Complexity |
 |----------|--------------|----------|------------|
-| **Heroku** | ~$35-50 | Learning, demos | Easy |
+| **Heroku Eco** | ~$5-10 | Learning (with Student Pack) | Easy |
 | **Railway** | ~$5-20 | Startups, microservices | Easy |
 | **Render** | ~$7-35 | Full control | Medium |
 | **Fly.io** | ~$0-20 | Global distribution | Medium |
@@ -14,99 +22,172 @@ This guide covers deploying the Digital Wallet System to various cloud platforms
 
 ---
 
-## Option 1: Heroku Deployment
+## Option 1: Heroku Deployment with Eco Dynos
 
-### Understanding Heroku Costs with GitHub Student Pack
+### Heroku Eco Plan Explained
 
-With **$13/month for 24 months** ($312 total), you need to be strategic:
+**Eco Plan**: $5/month for a **shared pool of 1000 dyno-hours**
 
-| Configuration | Services | Cost/Month | Notes |
-|---------------|----------|------------|-------|
-| Minimal | 2 Eco dynos + Postgres Mini | ~$10 | Combine services |
-| Basic | 3 Basic dynos + Postgres Mini | ~$26 | Separate core services |
-| Full | 6 Basic dynos + Postgres | ~$47 | All microservices |
+This means:
+- All your Eco dynos share from the same 1000-hour pool
+- Dynos auto-sleep after 30 minutes of inactivity
+- Perfect for development/testing (not 24/7 production)
 
-### Recommended: Combined Services Approach
+### Cost Calculation for Your 7 Services
 
-Combine services to stay within budget:
+| Running Hours | Calculation | Monthly Usage |
+|---------------|-------------|---------------|
+| 6 hours/day × 30 days | 6 × 7 services × 30 | 1,260 hours ❌ |
+| 5 hours/day × 30 days | 5 × 7 services × 30 | 1,050 hours ❌ |
+| 4 hours/day × 30 days | 4 × 7 services × 30 | 840 hours ✅ |
+| 3 hours/day × 30 days | 3 × 7 services × 30 | 630 hours ✅ |
 
-```
-┌─────────────────────────────────────────────────────┐
-│  dws-gateway-auth (API Gateway + Auth)    - $7/mo  │
-├─────────────────────────────────────────────────────┤
-│  dws-core (Wallet + Customer + Ledger)    - $7/mo  │
-├─────────────────────────────────────────────────────┤
-│  PostgreSQL Mini                          - $5/mo  │
-└─────────────────────────────────────────────────────┘
-Total: ~$19/month (within budget!)
-```
+**Recommendation**: Run services ~4 hours/day to stay under 1000 hours.
 
-### Step-by-Step Heroku Deployment
+### Total Cost with GitHub Student Pack
+
+| Resource | Cost |
+|----------|------|
+| Eco Dyno Pool (1000 hrs) | $5/month |
+| PostgreSQL Mini | $5/month |
+| **Total** | **$10/month** ✅ |
+
+With $13/month credits, you have $3/month extra for overage protection!
+
+### Step-by-Step Deployment
 
 #### 1. Install Heroku CLI
-```bash
-# Windows (using Chocolatey)
+
+```powershell
+# Using Chocolatey
 choco install heroku-cli
 
 # Or download from https://devcenter.heroku.com/articles/heroku-cli
 ```
 
 #### 2. Login and Create Apps
+
 ```bash
 heroku login
 
-# Create apps
-heroku create dws-gateway --region us
-heroku create dws-core --region us
+# Create all 7 apps (they share the Eco dyno pool)
+heroku create dws-api-gateway --region us
+heroku create dws-auth --region us
+heroku create dws-wallet --region us
+heroku create dws-customer --region us
+heroku create dws-ledger --region us
+heroku create dws-notification --region us
+heroku create dws-frontend --region us
 
-# Add PostgreSQL
-heroku addons:create heroku-postgresql:mini -a dws-core
+# Add PostgreSQL (shared by all backend services)
+heroku addons:create heroku-postgresql:mini -a dws-wallet
 ```
 
-#### 3. Configure Environment Variables
+#### 3. Get Database URL and Configure Services
+
 ```bash
-# For dws-gateway
-heroku config:set JWT_SECRET=your-production-secret-key-here -a dws-gateway
-heroku config:set CORE_SERVICE_URL=https://dws-core.herokuapp.com -a dws-gateway
+# Get the DATABASE_URL
+heroku config:get DATABASE_URL -a dws-wallet
 
-# For dws-core
-heroku config:set JWT_SECRET=your-production-secret-key-here -a dws-core
-heroku config:set SPRING_PROFILES_ACTIVE=production -a dws-core
+# Set environment variables for each service
+heroku config:set \
+  DATABASE_URL=postgres://... \
+  JWT_SECRET=your-super-secret-key-at-least-32-chars \
+  SPRING_PROFILES_ACTIVE=prod \
+  -a dws-auth
+
+heroku config:set \
+  DATABASE_URL=postgres://... \
+  JWT_SECRET=your-super-secret-key-at-least-32-chars \
+  SPRING_PROFILES_ACTIVE=prod \
+  LEDGER_SERVICE_URL=https://dws-ledger.herokuapp.com \
+  NOTIFICATION_SERVICE_URL=https://dws-notification.herokuapp.com \
+  -a dws-wallet
+
+# Set API Gateway routes
+heroku config:set \
+  JWT_SECRET=your-super-secret-key-at-least-32-chars \
+  AUTH_SERVICE_URL=https://dws-auth.herokuapp.com \
+  WALLET_SERVICE_URL=https://dws-wallet.herokuapp.com \
+  CUSTOMER_SERVICE_URL=https://dws-customer.herokuapp.com \
+  LEDGER_SERVICE_URL=https://dws-ledger.herokuapp.com \
+  NOTIFICATION_SERVICE_URL=https://dws-notification.herokuapp.com \
+  -a dws-api-gateway
+
+# Set frontend API URL
+heroku config:set \
+  VITE_API_URL=https://dws-api-gateway.herokuapp.com/api/v1 \
+  -a dws-frontend
 ```
 
-#### 4. Deploy Using Container Registry
+#### 4. Deploy Each Service
+
 ```bash
 # Login to Heroku Container Registry
 heroku container:login
 
-# Build and push (from each service directory)
+# Deploy API Gateway
 cd api-gateway
-heroku container:push web -a dws-gateway
-heroku container:release web -a dws-gateway
+./mvnw clean package -DskipTests
+heroku container:push web -a dws-api-gateway
+heroku container:release web -a dws-api-gateway
+
+# Deploy Auth Service
+cd ../auth-service
+./mvnw clean package -DskipTests
+heroku container:push web -a dws-auth
+heroku container:release web -a dws-auth
+
+# Repeat for other services...
+
+# Deploy Frontend
+cd ../frontend
+heroku container:push web -a dws-frontend
+heroku container:release web -a dws-frontend
+```
+
+#### 5. Scale Down When Not Using (Save Hours!)
+
+```bash
+# Sleep all dynos at night
+heroku ps:scale web=0 -a dws-api-gateway
+heroku ps:scale web=0 -a dws-auth
+heroku ps:scale web=0 -a dws-wallet
+# ... repeat for all services
+
+# Wake up in morning
+heroku ps:scale web=1 -a dws-api-gateway
+heroku ps:scale web=1 -a dws-auth
+heroku ps:scale web=1 -a dws-wallet
+# ... repeat for all services
 ```
 
 ---
 
-## Option 2: Railway Deployment (Recommended for Learning)
+## Option 2: Railway Deployment
 
-Railway offers better free tier and easier microservices deployment.
+Railway offers better microservices support and automatic GitHub deployments.
 
 ### Why Railway?
 - $5/month free credits with GitHub Student
-- Native Docker support
+- Auto-deploy from GitHub pushes
 - Built-in PostgreSQL
-- Automatic deployments from GitHub
-- Better suited for microservices
+- Better cold-start times than Heroku Eco
 
-### Steps:
+### Steps
+
 1. Go to [railway.app](https://railway.app)
 2. Sign in with GitHub
 3. Create new project → Deploy from GitHub repo
-4. Add PostgreSQL service
-5. Configure environment variables
-6. Deploy!
+4. Railway auto-detects your services from Dockerfiles
+5. Add PostgreSQL service
+6. Configure environment variables
+7. Deploy!
 
-### Railway Configuration (railway.json)
+### Railway Configuration
+
+Each service needs a `railway.json` in its directory:
+
 ```json
 {
   "$schema": "https://railway.app/railway.schema.json",
@@ -114,81 +195,58 @@ Railway offers better free tier and easier microservices deployment.
     "builder": "DOCKERFILE"
   },
   "deploy": {
-    "startCommand": "java -jar app.jar",
-    "healthcheckPath": "/actuator/health"
+    "healthcheckPath": "/actuator/health",
+    "restartPolicyType": "ON_FAILURE"
   }
 }
 ```
 
 ---
 
-## Option 3: Render Deployment
+## Option 3: Docker Deployment
 
-Render offers a generous free tier with auto-sleep.
+For self-hosted or VPS deployment.
 
-### Render Blueprint (render.yaml)
-```yaml
-services:
-  - type: web
-    name: dws-api-gateway
-    env: docker
-    dockerfilePath: ./api-gateway/Dockerfile
-    healthCheckPath: /actuator/health
-    envVars:
-      - key: JWT_SECRET
-        generateValue: true
-      - key: SPRING_PROFILES_ACTIVE
-        value: production
+```bash
+# Build all images
+docker-compose build
 
-databases:
-  - name: dws-postgres
-    plan: free
+# Start with production profile
+docker-compose -f docker-compose.yml -f docker-compose.prod.yml up -d
+
+# View logs
+docker-compose logs -f
+
+# Stop
+docker-compose down
 ```
 
 ---
 
-## Option 4: Fly.io Deployment
+## Environment Configuration
 
-Fly.io is great for global distribution and has a generous free tier.
+### Backend Environment Variables
 
-### fly.toml Example
-```toml
-app = "dws-api-gateway"
-primary_region = "iad"
+| Variable | Required | Description |
+|----------|----------|-------------|
+| `DATABASE_URL` | ✅ | PostgreSQL connection string |
+| `JWT_SECRET` | ✅ | JWT signing key (min 32 chars) |
+| `SPRING_PROFILES_ACTIVE` | ✅ | `dev`, `test`, or `prod` |
+| `AUTH_SERVICE_URL` | Gateway | Auth service URL |
+| `WALLET_SERVICE_URL` | Gateway | Wallet service URL |
+| `CUSTOMER_SERVICE_URL` | Gateway | Customer service URL |
+| `LEDGER_SERVICE_URL` | Wallet | Ledger service URL |
+| `NOTIFICATION_SERVICE_URL` | Wallet | Notification service URL |
+| `MAIL_HOST` | Notification | SMTP server |
+| `MAIL_USERNAME` | Notification | SMTP username |
+| `MAIL_PASSWORD` | Notification | SMTP password |
 
-[build]
-  dockerfile = "Dockerfile"
+### Frontend Environment Variables
 
-[http_service]
-  internal_port = 8080
-  force_https = true
-  auto_stop_machines = true
-  auto_start_machines = true
-  min_machines_running = 0
-
-[checks]
-  [checks.health]
-    port = 8080
-    type = "http"
-    interval = "30s"
-    timeout = "5s"
-    path = "/actuator/health"
-```
-
-### Deploy Commands
-```bash
-# Install Fly CLI
-curl -L https://fly.io/install.sh | sh
-
-# Login
-fly auth login
-
-# Deploy
-fly deploy
-
-# Scale down to save costs
-fly scale count 1
-```
+| Variable | Description |
+|----------|-------------|
+| `VITE_API_URL` | API Gateway URL |
+| `VITE_APP_ENV` | `development` or `production` |
 
 ---
 
@@ -196,31 +254,37 @@ fly scale count 1
 
 Before deploying to production:
 
+### Security
 - [ ] Change all default passwords and secrets
+- [ ] Use strong JWT_SECRET (min 256 bits)
 - [ ] Enable HTTPS only
-- [ ] Set up proper logging (consider Papertrail, Loggly)
-- [ ] Configure database backups
-- [ ] Set up monitoring (UptimeRobot, Better Stack)
+- [ ] Set restrictive CORS origins
 - [ ] Review rate limiting settings
-- [ ] Test all endpoints
+
+### Database
+- [ ] Configure database backups
+- [ ] Set `ddl-auto: validate` (not `update`)
+- [ ] Test database migrations
+
+### Monitoring
+- [ ] Set up logging (Papertrail, Loggly)
+- [ ] Set up uptime monitoring (UptimeRobot, Better Stack)
 - [ ] Set up error tracking (Sentry)
+- [ ] Enable health check endpoints
+
+### Performance
+- [ ] Enable gzip compression
+- [ ] Configure connection pool sizes
+- [ ] Test under load
+
+### Operations
+- [ ] Document deployment process
+- [ ] Create rollback procedure
+- [ ] Set up alerting
 
 ---
 
-## Environment Variables Reference
-
-| Variable | Service | Description |
-|----------|---------|-------------|
-| `JWT_SECRET` | All | JWT signing key (min 32 chars) |
-| `DATABASE_URL` | Core services | PostgreSQL connection string |
-| `SPRING_PROFILES_ACTIVE` | All | Set to `production` |
-| `MAIL_HOST` | Notification | SMTP server |
-| `MAIL_USERNAME` | Notification | SMTP username |
-| `MAIL_PASSWORD` | Notification | SMTP password |
-
----
-
-## Quick Start Commands
+## Quick Reference Commands
 
 ```bash
 # Test locally with Docker
@@ -234,5 +298,12 @@ docker-compose up -d
 
 # Check service health
 curl http://localhost:8080/actuator/health
-```
 
+# View logs
+docker-compose logs -f wallet-service
+
+# Scale down Heroku (save hours)
+for app in dws-api-gateway dws-auth dws-wallet dws-customer dws-ledger dws-notification dws-frontend; do
+  heroku ps:scale web=0 -a $app
+done
+```

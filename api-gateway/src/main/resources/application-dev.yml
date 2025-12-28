@@ -1,0 +1,29 @@
+# Development Profile Configuration
+spring:
+  cloud:
+    gateway:
+      globalcors:
+        cors-configurations:
+          '[/**]':
+            allowedOrigins:
+              - "http://localhost:3000"
+              - "http://localhost:5173"
+            allowedMethods:
+              - GET
+              - POST
+              - PUT
+              - DELETE
+              - OPTIONS
+            allowedHeaders: "*"
+            allowCredentials: true
+
+logging:
+  level:
+    org.springframework.cloud.gateway: DEBUG
+    com.fintech.gateway: DEBUG
+
+# Rate limiting - more relaxed for development
+gateway:
+  rate-limit:
+    default-requests-per-window: 1000
+

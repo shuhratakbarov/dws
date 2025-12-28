@@ -1,0 +1,52 @@
+# Production Profile Configuration
+# Activated by: SPRING_PROFILES_ACTIVE=prod
+
+spring:
+  jpa:
+    hibernate:
+      ddl-auto: validate  # Never auto-update schema in production
+    show-sql: false
+    properties:
+      hibernate:
+        format_sql: false
+
+  datasource:
+    hikari:
+      maximum-pool-size: 20
+      minimum-idle: 5
+      connection-timeout: 20000
+      idle-timeout: 300000
+      max-lifetime: 1200000
+      leak-detection-threshold: 60000
+
+# Production logging - minimal, structured
+logging:
+  level:
+    root: WARN
+    com.fintech.walletservice: INFO
+    org.hibernate.SQL: WARN
+    org.springframework.web: WARN
+  pattern:
+    console: '{"timestamp":"%d{ISO8601}","level":"%level","service":"wallet-service","message":"%msg"}%n'
+
+# Production server settings
+server:
+  error:
+    include-message: never
+    include-stacktrace: never
+    include-binding-errors: never
+  compression:
+    enabled: true
+    mime-types: application/json,application/xml,text/html,text/plain
+    min-response-size: 1024
+
+# Management endpoints for production
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus
+  endpoint:
+    health:
+      show-details: never
+

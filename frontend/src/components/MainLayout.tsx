@@ -1,10 +1,10 @@
-import React from 'react';
 import { Layout, Menu, Avatar, Dropdown, Space, Typography } from 'antd';
 import {
   WalletOutlined,
   UserOutlined,
   LogoutOutlined,
   SettingOutlined,
+  HistoryOutlined,
 } from '@ant-design/icons';
 import { Outlet, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
@@ -22,6 +22,11 @@ export default function MainLayout() {
       key: '/dashboard',
       icon: <WalletOutlined />,
       label: 'Wallets',
+    },
+    {
+      key: '/transactions',
+      icon: <HistoryOutlined />,
+      label: 'Transactions',
     },
     {
       key: '/profile',

@@ -1,0 +1,51 @@
+# Production Profile Configuration
+# Activated by: SPRING_PROFILES_ACTIVE=prod
+
+spring:
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    show-sql: false
+    properties:
+      hibernate:
+        format_sql: false
+
+  datasource:
+    hikari:
+      maximum-pool-size: 20
+      minimum-idle: 5
+      connection-timeout: 20000
+      leak-detection-threshold: 60000
+
+# Production logging
+logging:
+  level:
+    root: WARN
+    com.fintech.authservice: INFO
+    org.springframework.security: WARN
+  pattern:
+    console: '{"timestamp":"%d{ISO8601}","level":"%level","service":"auth-service","message":"%msg"}%n'
+
+# Production server settings
+server:
+  error:
+    include-message: never
+    include-stacktrace: never
+
+# Disable Swagger in production
+springdoc:
+  swagger-ui:
+    enabled: false
+  api-docs:
+    enabled: false
+
+# Management endpoints
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics
+  endpoint:
+    health:
+      show-details: never
+

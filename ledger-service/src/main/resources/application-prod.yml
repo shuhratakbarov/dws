@@ -1,0 +1,31 @@
+# Production Profile Configuration
+spring:
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    show-sql: false
+
+logging:
+  level:
+    root: WARN
+    com.fintech.ledgerservice: INFO
+  pattern:
+    console: '{"timestamp":"%d{ISO8601}","level":"%level","service":"ledger-service","message":"%msg"}%n'
+
+server:
+  error:
+    include-message: never
+    include-stacktrace: never
+
+springdoc:
+  swagger-ui:
+    enabled: false
+  api-docs:
+    enabled: false
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics
+

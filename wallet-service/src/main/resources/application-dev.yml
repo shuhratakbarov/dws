@@ -1,0 +1,33 @@
+# Development Profile Configuration
+# Activated by: SPRING_PROFILES_ACTIVE=dev
+
+spring:
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
+
+  # Dev-specific datasource (use local PostgreSQL or Docker)
+  datasource:
+    hikari:
+      maximum-pool-size: 5
+      minimum-idle: 2
+
+# Enable detailed logging for development
+logging:
+  level:
+    com.fintech.walletservice: DEBUG
+    org.hibernate.SQL: DEBUG
+    org.hibernate.type.descriptor.sql.BasicBinder: TRACE
+    org.springframework.web: DEBUG
+
+# Dev-specific external services (localhost)
+services:
+  ledger:
+    url: http://localhost:8084
+  notification:
+    url: http://localhost:8085
+
