@@ -11,14 +11,24 @@ spring:
       globalcors:
         cors-configurations:
           '[/**]':
-            allowedOrigins: "*"
+            allowedOrigins:
+              - "http://localhost:3000"
+              - "http://127.0.0.1:3000"
+              - "http://localhost:8080"
             allowedMethods:
               - GET
               - POST
               - PUT
               - DELETE
               - OPTIONS
+              - PATCH
             allowedHeaders: "*"
+            allowCredentials: true
+            exposedHeaders:
+              - "Authorization"
+              - "X-RateLimit-Limit"
+              - "X-RateLimit-Remaining"
+            maxAge: 3600
 
       # Route definitions
       routes:
@@ -28,6 +38,7 @@ spring:
           predicates:
             - Path=/api/v1/auth/**
           filters:
+            - DedupeResponseHeader=Access-Control-Allow-Origin Access-Control-Allow-Credentials, RETAIN_UNIQUE
             - name: AuthenticationFilter
             - name: RateLimitingFilter
               args:

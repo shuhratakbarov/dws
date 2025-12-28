@@ -1,37 +1,89 @@
-# Maven
+# ================== Maven/Java ==================
 target/
 pom.xml.tag
 pom.xml.releaseBackup
 pom.xml.versionsBackup
 release.properties
+dependency-reduced-pom.xml
+buildNumber.properties
+.mvn/timing.properties
+.mvn/wrapper/maven-wrapper.jar
 
-# IDE
+# ================== IDE ==================
+# IntelliJ IDEA
 .idea/
 *.iml
 *.ipr
 *.iws
-.vscode/
+out/
+
+# Eclipse
 .project
 .classpath
 .settings/
+bin/
 
-# Logs
+# VS Code
+.vscode/
+
+# NetBeans
+nbproject/
+build/
+nbbuild/
+nbdist/
+
+# ================== Node/Frontend ==================
+node_modules/
+dist/
+.npm
+.pnpm-store/
+*.local
+
+# ================== Logs ==================
 *.log
 logs/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
 
-# Environment
+# ================== Environment ==================
 .env
+.env.local
+.env.*.local
 !.env.example
+!frontend/.env.example
 
-# OS
+# ================== OS Files ==================
 .DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
 Thumbs.db
+desktop.ini
 
-# Build outputs
+# ================== Build Outputs ==================
 *.jar
 *.war
+*.ear
 *.class
+*.zip
+*.tar.gz
 
-# Test outputs
+# ================== Test Outputs ==================
 /test-output/
+*.test-results/
+coverage/
+.nyc_output/
+
+# ================== Docker ==================
+docker-compose.override.yml
+
+# ================== Misc ==================
+*.bak
+*.tmp
+*.temp
+*.swp
+*~
 

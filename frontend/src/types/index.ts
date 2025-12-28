@@ -33,14 +33,16 @@ export interface User {
 }
 
 // Wallet types
+// Wallet types
 export interface Wallet {
   id: string;
   userId: string;
   currency: string;
-  balanceMinorUnits: number;
+  balance: number;  // Backend returns 'balance'
+  balanceMinorUnits?: number;  // Alias for compatibility
   status: 'ACTIVE' | 'FROZEN' | 'CLOSED';
-  createdAt: string;
-  updatedAt: string;
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 export interface CreateWalletRequest {
@@ -63,12 +65,16 @@ export interface TransferRequest {
 
 export interface TransactionResponse {
   id: string;
-  walletId: string;
-  type: 'DEPOSIT' | 'WITHDRAWAL' | 'TRANSFER_IN' | 'TRANSFER_OUT';
-  amountMinorUnits: number;
-  balanceAfterMinorUnits: number;
+  transactionId?: string;
+  walletId?: string;
+  entryType: 'DEBIT' | 'CREDIT';  // Backend uses DEBIT/CREDIT
+  type?: 'DEPOSIT' | 'WITHDRAWAL' | 'TRANSFER_IN' | 'TRANSFER_OUT';  // For compatibility
+  amount: number;
+  amountMinorUnits?: number;  // Alias for compatibility
+  balanceAfter: number;
+  balanceAfterMinorUnits?: number;  // Alias for compatibility
   description?: string;
-  idempotencyKey: string;
+  idempotencyKey?: string;
   createdAt: string;
 }
 
@@ -81,9 +87,10 @@ export const CURRENCIES: Record<string, { symbol: string; name: string; decimals
   JPY: { symbol: '¥', name: 'Japanese Yen', decimals: 0 },
 };
 
-export function formatCurrency(minorUnits: number, currency: string): string {
-  const config = CURRENCIES[currency] || { symbol: currency, decimals: 2 };
-  const amount = minorUnits / Math.pow(10, config.decimals);
+export function formatCurrency(minorUnits: number | undefined | null, currency: string): string {
+  const config = CURRENCIES[currency] || { symbol: currency || '$', decimals: 2 };
+  const safeMinorUnits = minorUnits ?? 0;
+  const amount = safeMinorUnits / Math.pow(10, config.decimals);
   return `${config.symbol}${amount.toFixed(config.decimals)}`;
 }
 

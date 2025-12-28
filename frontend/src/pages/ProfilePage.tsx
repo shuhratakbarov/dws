@@ -25,10 +25,12 @@ interface CustomerProfile {
   userId: string;
   firstName: string;
   lastName: string;
-  email: string;
+  fullName?: string;
+  email?: string;
   phoneNumber?: string;
   dateOfBirth?: string;
-  kycStatus: 'PENDING' | 'VERIFIED' | 'REJECTED';
+  kycStatus: 'PENDING' | 'VERIFIED' | 'REJECTED' | 'NOT_STARTED';
+  status?: 'ACTIVE' | 'SUSPENDED' | 'CLOSED';
   address?: {
     street: string;
     city: string;
@@ -37,7 +39,7 @@ interface CustomerProfile {
     country: string;
   };
   createdAt: string;
-  updatedAt: string;
+  updatedAt?: string;
 }
 
 export default function ProfilePage() {
@@ -106,8 +108,25 @@ export default function ProfilePage() {
         return 'green';
       case 'REJECTED':
         return 'red';
-      default:
+      case 'PENDING':
         return 'orange';
+      case 'NOT_STARTED':
+      default:
+        return 'default';
+    }
+  };
+
+  const getKycStatusText = (status: string) => {
+    switch (status) {
+      case 'VERIFIED':
+        return 'Verified ✓';
+      case 'REJECTED':
+        return 'Rejected';
+      case 'PENDING':
+        return 'Pending Review';
+      case 'NOT_STARTED':
+      default:
+        return 'Not Started';
     }
   };
 
@@ -140,13 +159,11 @@ export default function ProfilePage() {
                 <Text type="secondary">
                   <MailOutlined /> {user?.email}
                 </Text>
-                {profile && (
-                  <div style={{ marginTop: 8 }}>
-                    <Tag color={getKycStatusColor(profile.kycStatus)}>
-                      KYC: {profile.kycStatus}
-                    </Tag>
-                  </div>
-                )}
+                <div style={{ marginTop: 8 }}>
+                  <Tag color={getKycStatusColor(profile?.kycStatus || 'NOT_STARTED')}>
+                    KYC: {getKycStatusText(profile?.kycStatus || 'NOT_STARTED')}
+                  </Tag>
+                </div>
               </Col>
               <Col>
                 {!editing && (
@@ -248,8 +265,8 @@ export default function ProfilePage() {
                   {profile?.phoneNumber || '-'}
                 </Descriptions.Item>
                 <Descriptions.Item label="KYC Status">
-                  <Tag color={getKycStatusColor(profile?.kycStatus || 'PENDING')}>
-                    {profile?.kycStatus || 'PENDING'}
+                  <Tag color={getKycStatusColor(profile?.kycStatus || 'NOT_STARTED')}>
+                    {getKycStatusText(profile?.kycStatus || 'NOT_STARTED')}
                   </Tag>
                 </Descriptions.Item>
                 <Descriptions.Item label="Member Since">

@@ -1,11 +1,44 @@
-# Digital Wallet System (DWS)
+# 💰 Digital Wallet System (DWS)
 
-[![CI/CD Pipeline](https://github.com/YOUR_USERNAME/DWS/actions/workflows/ci.yml/badge.svg)](https://github.com/YOUR_USERNAME/DWS/actions/workflows/ci.yml)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+<p align="center">
+  <img src="frontend/public/wallet.svg" alt="DWS Logo" width="80" height="80">
+</p>
 
-A production-ready microservices-based digital wallet system built with Spring Boot and React. Supports multi-currency wallets, secure transactions, and real-time notifications.
+<p align="center">
+  <strong>A production-ready microservices-based digital wallet system</strong>
+</p>
 
-> **📚 Learning Project**: This project was built step-by-step as a learning journey into microservices architecture. See [DEPLOYMENT.md](./DEPLOYMENT.md) for deployment options.
+<p align="center">
+  <a href="#"><img src="https://img.shields.io/badge/Java-21-orange?style=flat-square&logo=openjdk" alt="Java 21"></a>
+  <a href="#"><img src="https://img.shields.io/badge/Spring%20Boot-3.4-brightgreen?style=flat-square&logo=springboot" alt="Spring Boot"></a>
+  <a href="#"><img src="https://img.shields.io/badge/React-18-blue?style=flat-square&logo=react" alt="React 18"></a>
+  <a href="#"><img src="https://img.shields.io/badge/PostgreSQL-15-blue?style=flat-square&logo=postgresql" alt="PostgreSQL"></a>
+  <a href="./LICENSE"><img src="https://img.shields.io/badge/License-MIT-yellow?style=flat-square" alt="MIT License"></a>
+</p>
+
+<p align="center">
+  <a href="#quick-start">Quick Start</a> •
+  <a href="#features">Features</a> •
+  <a href="#architecture">Architecture</a> •
+  <a href="#api-documentation">API Docs</a> •
+  <a href="#deployment">Deployment</a>
+</p>
+
+---
+
+A full-stack digital wallet application demonstrating **microservices architecture** with Spring Boot and React. Users can create multi-currency wallets, deposit/withdraw funds, transfer between wallets, and view transaction history.
+
+> **📚 Learning Project**: This project was built step-by-step as a learning journey into microservices architecture. It demonstrates real-world patterns used in fintech applications.
+
+## ✨ Key Features
+
+- 🏦 **Multi-currency wallets** - USD, EUR, GBP, UZS support
+- 💸 **Secure transactions** - Deposits, withdrawals, and transfers
+- 🔐 **JWT authentication** - With automatic token refresh
+- 🚦 **API Gateway** - Centralized routing and rate limiting
+- 📊 **Transaction history** - Immutable ledger for audit trail
+- 📧 **Notifications** - Email alerts for transactions
+- 🎨 **Modern UI** - React + Ant Design responsive interface
 
 ## Architecture
 

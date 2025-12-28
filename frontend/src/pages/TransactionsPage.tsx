@@ -86,17 +86,20 @@ export default function TransactionsPage() {
       setTransactions(data.content || []);
       setPagination((prev) => ({ ...prev, total: data.totalElements }));
 
-      // Calculate stats
-      const deposits = data.content?.filter((t: TransactionResponse) => t.type === 'DEPOSIT') || [];
-      const withdrawals = data.content?.filter((t: TransactionResponse) => t.type === 'WITHDRAWAL') || [];
-      const transfers = data.content?.filter((t: TransactionResponse) =>
-        t.type === 'TRANSFER_IN' || t.type === 'TRANSFER_OUT'
+      // Calculate stats - backend uses entryType (CREDIT/DEBIT) not type
+      const credits = data.content?.filter((t: TransactionResponse) =>
+        t.entryType === 'CREDIT' || t.type === 'DEPOSIT' || t.type === 'TRANSFER_IN'
+      ) || [];
+      const debits = data.content?.filter((t: TransactionResponse) =>
+        t.entryType === 'DEBIT' || t.type === 'WITHDRAWAL' || t.type === 'TRANSFER_OUT'
       ) || [];
 
       setStats({
-        totalDeposits: deposits.reduce((sum: number, t: TransactionResponse) => sum + t.amountMinorUnits, 0),
-        totalWithdrawals: withdrawals.reduce((sum: number, t: TransactionResponse) => sum + t.amountMinorUnits, 0),
-        totalTransfers: transfers.length,
+        totalDeposits: credits.reduce((sum: number, t: TransactionResponse) => sum + (t.amount ?? t.amountMinorUnits ?? 0), 0),
+        totalWithdrawals: debits.reduce((sum: number, t: TransactionResponse) => sum + (t.amount ?? t.amountMinorUnits ?? 0), 0),
+        totalTransfers: data.content?.filter((t: TransactionResponse) =>
+          t.type === 'TRANSFER_IN' || t.type === 'TRANSFER_OUT'
+        ).length || 0,
         transactionCount: data.totalElements || 0,
       });
     } catch (error) {
@@ -115,9 +118,9 @@ export default function TransactionsPage() {
       ...transactions.map((t) =>
         [
           new Date(t.createdAt).toISOString(),
-          t.type,
-          t.amountMinorUnits / 100,
-          t.balanceAfterMinorUnits / 100,
+          t.entryType || t.type || 'Unknown',
+          (t.amount ?? t.amountMinorUnits ?? 0) / 100,
+          (t.balanceAfter ?? t.balanceAfterMinorUnits ?? 0) / 100,
           t.description || '',
         ].join(',')
       ),
@@ -148,17 +151,21 @@ export default function TransactionsPage() {
     },
     {
       title: 'Type',
-      dataIndex: 'type',
-      key: 'type',
+      dataIndex: 'entryType',
+      key: 'entryType',
       width: 140,
-      render: (type: string) => {
+      render: (entryType: string, record: TransactionResponse) => {
+        const type = entryType || record.type;
+        if (!type) return <Tag>Unknown</Tag>;
         const config: Record<string, { color: string; icon: React.ReactNode; label: string }> = {
+          CREDIT: { color: 'green', icon: <ArrowDownOutlined />, label: 'Deposit' },
+          DEBIT: { color: 'red', icon: <ArrowUpOutlined />, label: 'Withdrawal' },
           DEPOSIT: { color: 'green', icon: <ArrowDownOutlined />, label: 'Deposit' },
           WITHDRAWAL: { color: 'red', icon: <ArrowUpOutlined />, label: 'Withdrawal' },
-          TRANSFER_IN: { color: 'blue', icon: <ArrowDownOutlined />, label: 'Transfer In' },
-          TRANSFER_OUT: { color: 'orange', icon: <ArrowUpOutlined />, label: 'Transfer Out' },
+          TRANSFER_IN: { color: 'blue', icon: <ArrowDownOutlined />, label: 'Received' },
+          TRANSFER_OUT: { color: 'orange', icon: <ArrowUpOutlined />, label: 'Sent' },
         };
-        const { color, icon, label } = config[type] || { color: 'default', icon: null, label: type };
+        const { color, icon, label } = config[type] || { color: 'default', icon: null, label: type || 'Unknown' };
         return (
           <Tag color={color} icon={icon}>
             {label}
@@ -168,30 +175,33 @@ export default function TransactionsPage() {
     },
     {
       title: 'Amount',
-      dataIndex: 'amountMinorUnits',
+      dataIndex: 'amount',
       key: 'amount',
       width: 150,
       align: 'right' as const,
       render: (amount: number, record: TransactionResponse) => {
-        const isNegative = ['WITHDRAWAL', 'TRANSFER_OUT'].includes(record.type);
+        const entryType = record.entryType || record.type;
+        const isNegative = ['DEBIT', 'WITHDRAWAL', 'TRANSFER_OUT'].includes(entryType || '');
         const wallet = getSelectedWallet();
+        const displayAmount = amount ?? record.amountMinorUnits ?? 0;
         return (
           <Text strong type={isNegative ? 'danger' : 'success'} style={{ fontSize: 16 }}>
             {isNegative ? '-' : '+'}
-            {formatCurrency(amount, wallet?.currency || 'USD')}
+            {formatCurrency(displayAmount, wallet?.currency || 'USD')}
           </Text>
         );
       },
     },
     {
       title: 'Balance After',
-      dataIndex: 'balanceAfterMinorUnits',
+      dataIndex: 'balanceAfter',
       key: 'balanceAfter',
       width: 150,
       align: 'right' as const,
-      render: (balance: number) => {
+      render: (balance: number, record: TransactionResponse) => {
         const wallet = getSelectedWallet();
-        return formatCurrency(balance, wallet?.currency || 'USD');
+        const displayBalance = balance ?? record.balanceAfterMinorUnits ?? 0;
+        return formatCurrency(displayBalance, wallet?.currency || 'USD');
       },
     },
     {
@@ -284,7 +294,7 @@ export default function TransactionsPage() {
                 >
                   {wallets.map((wallet) => (
                     <Option key={wallet.id} value={wallet.id}>
-                      {CURRENCIES[wallet.currency]?.symbol} {wallet.currency} - {formatCurrency(wallet.balanceMinorUnits, wallet.currency)}
+                      {CURRENCIES[wallet.currency]?.symbol} {wallet.currency} - {formatCurrency(wallet.balance ?? wallet.balanceMinorUnits, wallet.currency)}
                     </Option>
                   ))}
                 </Select>

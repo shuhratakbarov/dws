@@ -37,9 +37,17 @@ public class AuthenticationFilter extends AbstractGatewayFilterFactory<Authentic
     public GatewayFilter apply(Config config) {
         return (exchange, chain) -> {
             ServerHttpRequest request = exchange.getRequest();
+            log.info("Processing request: {} {}", request.getMethod(), request.getPath());
+
+            // Skip authentication for CORS preflight requests
+            if (request.getMethod() == org.springframework.http.HttpMethod.OPTIONS) {
+                log.debug("Skipping auth for OPTIONS preflight request");
+                return chain.filter(exchange);
+            }
 
             // Skip authentication for public endpoints
             if (routeValidator.isOpenEndpoint(request)) {
+                log.info("Skipping auth for public endpoint: {}", request.getPath());
                 return chain.filter(exchange);
             }
 

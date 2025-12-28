@@ -49,5 +49,71 @@ export const walletService = {
     });
     return response.data;
   },
+
+  // Freeze wallet
+  async freezeWallet(walletId: string): Promise<Wallet> {
+    const response = await api.post<Wallet>(`/wallets/${walletId}/freeze`);
+    return response.data;
+  },
+
+  // Unfreeze wallet
+  async unfreezeWallet(walletId: string): Promise<Wallet> {
+    const response = await api.post<Wallet>(`/wallets/${walletId}/unfreeze`);
+    return response.data;
+  },
+};
+
+// Ledger service for immutable transaction history
+export const ledgerService = {
+  // Get ledger entries for a wallet
+  async getEntries(walletId: string, page = 0, size = 50): Promise<{
+    content: any[];
+    totalElements: number;
+    totalPages: number;
+  }> {
+    const response = await api.get(`/ledger/wallet/${walletId}`, {
+      params: { page, size },
+    });
+    return response.data;
+  },
+
+  // Get all ledger entries for user
+  async getUserEntries(page = 0, size = 50): Promise<{
+    content: any[];
+    totalElements: number;
+    totalPages: number;
+  }> {
+    const response = await api.get('/ledger/me', {
+      params: { page, size },
+    });
+    return response.data;
+  },
+};
+
+// Notification service
+export const notificationService = {
+  // Get notification preferences
+  async getPreferences(): Promise<any> {
+    const response = await api.get('/notifications/preferences');
+    return response.data;
+  },
+
+  // Update notification preferences
+  async updatePreferences(preferences: any): Promise<any> {
+    const response = await api.put('/notifications/preferences', preferences);
+    return response.data;
+  },
+
+  // Get notifications
+  async getNotifications(page = 0, size = 20): Promise<{
+    content: any[];
+    totalElements: number;
+    totalPages: number;
+  }> {
+    const response = await api.get('/notifications', {
+      params: { page, size },
+    });
+    return response.data;
+  },
 };
 
