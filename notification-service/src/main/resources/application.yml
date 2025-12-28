@@ -1,0 +1,80 @@
+server:
+  port: 8085
+
+spring:
+  application:
+    name: notification-service
+
+  datasource:
+    url: ${DB_URL:jdbc:postgresql://localhost:5432/notification_db}
+    username: ${DB_USERNAME:postgres}
+    password: ${DB_PASSWORD}
+    driver-class-name: org.postgresql.Driver
+
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: false
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+
+  # Email Configuration (using MailHog for local testing)
+  mail:
+    host: ${MAIL_HOST:localhost}
+    port: ${MAIL_PORT:1025}
+    username: ${MAIL_USERNAME:}
+    password: ${MAIL_PASSWORD:}
+    properties:
+      mail:
+        smtp:
+          auth: false
+          starttls:
+            enable: false
+
+  # Thymeleaf for email templates
+  thymeleaf:
+    prefix: classpath:/templates/
+    suffix: .html
+    mode: HTML
+    cache: false
+
+# Notification Channel Configuration
+notification:
+  email:
+    enabled: ${EMAIL_ENABLED:true}
+    from: ${EMAIL_FROM:noreply@digitalwallet.com}
+  sms:
+    enabled: ${SMS_ENABLED:false}
+    # provider: twilio
+    # twilio:
+    #   account-sid: ${TWILIO_ACCOUNT_SID}
+    #   auth-token: ${TWILIO_AUTH_TOKEN}
+    #   from-number: ${TWILIO_FROM_NUMBER}
+  push:
+    enabled: ${PUSH_ENABLED:false}
+    # fcm:
+    #   credentials: ${FCM_CREDENTIALS_PATH}
+
+# Async configuration
+spring.task.execution:
+  pool:
+    core-size: 5
+    max-size: 10
+    queue-capacity: 100
+
+# Logging
+logging:
+  level:
+    root: INFO
+    com.fintech.notificationservice: DEBUG
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} - %logger{36} - %msg%n"
+
+# OpenAPI
+springdoc:
+  api-docs:
+    path: /v3/api-docs
+  swagger-ui:
+    path: /swagger-ui.html
+

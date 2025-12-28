@@ -1,0 +1,26 @@
+spring:
+  application:
+    name: wallet-service-test
+
+  # Testcontainers auto-configures datasource via @ServiceConnection
+  # No manual datasource configuration needed
+
+  # Disable scheduling in tests
+  task:
+    scheduling:
+      pool:
+        size: 1
+
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+    properties:
+      hibernate:
+        format_sql: true
+    show-sql: true
+
+logging:
+  level:
+    com.fintech.walletservice: DEBUG
+    org.hibernate.SQL: DEBUG
+    org.testcontainers: INFO

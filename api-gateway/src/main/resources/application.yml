@@ -1,0 +1,122 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: api-gateway
+
+  cloud:
+    gateway:
+      # Global CORS configuration
+      globalcors:
+        cors-configurations:
+          '[/**]':
+            allowedOrigins: "*"
+            allowedMethods:
+              - GET
+              - POST
+              - PUT
+              - DELETE
+              - OPTIONS
+            allowedHeaders: "*"
+
+      # Route definitions
+      routes:
+        # ==================== AUTH SERVICE ====================
+        - id: auth-service
+          uri: ${AUTH_SERVICE_URL:http://localhost:8081}
+          predicates:
+            - Path=/api/v1/auth/**
+          filters:
+            - name: AuthenticationFilter
+            - name: RateLimitingFilter
+              args:
+                requestsPerWindow: 20    # 20 login attempts per minute
+                windowSizeSeconds: 60
+
+        # ==================== WALLET SERVICE ====================
+        - id: wallet-service
+          uri: ${WALLET_SERVICE_URL:http://localhost:8082}
+          predicates:
+            - Path=/api/v1/wallets/**
+          filters:
+            - name: AuthenticationFilter
+            - name: RateLimitingFilter
+              args:
+                requestsPerWindow: 100   # 100 requests per minute
+                windowSizeSeconds: 60
+
+        - id: wallet-admin-service
+          uri: ${WALLET_SERVICE_URL:http://localhost:8082}
+          predicates:
+            - Path=/api/v1/admin/**
+          filters:
+            - name: AuthenticationFilter
+            - name: RateLimitingFilter
+              args:
+                requestsPerWindow: 50
+                windowSizeSeconds: 60
+
+        # ==================== CUSTOMER SERVICE ====================
+        - id: customer-service
+          uri: ${CUSTOMER_SERVICE_URL:http://localhost:8083}
+          predicates:
+            - Path=/api/v1/customers/**
+          filters:
+            - name: AuthenticationFilter
+            - name: RateLimitingFilter
+              args:
+                requestsPerWindow: 100
+                windowSizeSeconds: 60
+
+        # ==================== LEDGER SERVICE ====================
+        - id: ledger-service
+          uri: ${LEDGER_SERVICE_URL:http://localhost:8084}
+          predicates:
+            - Path=/api/v1/ledger/**
+          filters:
+            - name: AuthenticationFilter
+            - name: RateLimitingFilter
+              args:
+                requestsPerWindow: 200
+                windowSizeSeconds: 60
+
+        # ==================== NOTIFICATION SERVICE ====================
+        - id: notification-service
+          uri: ${NOTIFICATION_SERVICE_URL:http://localhost:8085}
+          predicates:
+            - Path=/api/v1/notifications/**
+          filters:
+            - name: AuthenticationFilter
+            - name: RateLimitingFilter
+              args:
+                requestsPerWindow: 50
+                windowSizeSeconds: 60
+
+      # Default filters applied to all routes
+      default-filters:
+        - DedupeResponseHeader=Access-Control-Allow-Origin Access-Control-Allow-Credentials, RETAIN_UNIQUE
+
+# JWT Configuration (must match Auth Service)
+jwt:
+  secret: ${JWT_SECRET:dGhpcyBpcyBhIHZlcnkgbG9uZyBzZWNyZXQga2V5IGZvciBqd3QgdG9rZW4gc2lnbmluZyB0aGF0IHNob3VsZCBiZSBhdCBsZWFzdCA1MTIgYml0cw==}
+
+# Actuator endpoints
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,gateway
+  endpoint:
+    gateway:
+      enabled: true
+
+# Logging
+logging:
+  level:
+    root: INFO
+    com.fintech.gateway: DEBUG
+    org.springframework.cloud.gateway: DEBUG
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} - %logger{36} - %msg%n"
+

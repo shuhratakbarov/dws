@@ -1,0 +1,67 @@
+spring:
+  application:
+    name: wallet-service
+  task:
+    scheduling:
+      pool:
+        size: 2  # Number of threads for scheduled tasks
+      thread-name-prefix: "scheduled-"
+
+  datasource:
+    url: ${DB_URL:jdbc:postgresql://localhost:5432/wallet_db}
+    username: ${DB_USERNAME:postgres}
+    password: ${DB_PASSWORD:24112004}
+    driver-class-name: org.postgresql.Driver
+    hikari:
+      maximum-pool-size: 10
+      minimum-idle: 5
+      connection-timeout: 30000
+      idle-timeout: 600000
+      max-lifetime: 1800000
+
+  jpa:
+    hibernate:
+      ddl-auto: update  # Use 'validate' in production
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+        jdbc:
+          time_zone: UTC
+        # Enable batch inserts
+        jdbc.batch_size: 20
+        order_inserts: true
+        order_updates: true
+    open-in-view: false
+
+  sql:
+    init:
+      mode: never  # Use Flyway/Liquibase for production
+
+server:
+  port: 8082
+  error:
+    include-message: always
+    include-binding-errors: always
+
+# External Services Configuration
+services:
+  ledger:
+    url: ${LEDGER_SERVICE_URL:http://localhost:8084}
+    enabled: ${LEDGER_SERVICE_ENABLED:true}
+  notification:
+    url: ${NOTIFICATION_SERVICE_URL:http://localhost:8085}
+    enabled: ${NOTIFICATION_SERVICE_ENABLED:true}
+
+# Wallet Configuration
+wallet:
+  large-transaction-threshold: ${LARGE_TX_THRESHOLD:100000}  # $1000.00 in cents
+
+logging:
+  level:
+    com.fintech.wallet: DEBUG
+    org.hibernate.SQL: DEBUG
+    org.hibernate.type.descriptor.sql.BasicBinder: TRACE
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} - %logger{36} - %msg%n"

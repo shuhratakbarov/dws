@@ -1,0 +1,99 @@
+### Auth Service API Tests
+### Base URL
+@baseUrl = http://localhost:8081
+@email = test@example.com
+@password = SecureP@ss123
+
+### 1. Register New User
+POST {{baseUrl}}/api/v1/auth/register
+Content-Type: application/json
+
+{
+  "email": "{{email}}",
+  "password": "{{password}}",
+  "firstName": "John",
+  "lastName": "Doe"
+}
+
+> {%
+    client.test("User registered", function() {
+        client.assert(response.status === 201, "Response status is not 201");
+        client.global.set("accessToken", response.body.accessToken);
+        client.global.set("refreshToken", response.body.refreshToken);
+        client.global.set("userId", response.body.userId);
+    });
+%}
+
+### 2. Try Duplicate Registration (Should Fail)
+POST {{baseUrl}}/api/v1/auth/register
+Content-Type: application/json
+
+{
+  "email": "{{email}}",
+  "password": "{{password}}",
+  "firstName": "John",
+  "lastName": "Doe"
+}
+
+### 3. Login
+POST {{baseUrl}}/api/v1/auth/login
+Content-Type: application/json
+
+{
+  "email": "{{email}}",
+  "password": "{{password}}"
+}
+
+> {%
+    client.test("Login successful", function() {
+        client.assert(response.status === 200, "Response status is not 200");
+        client.global.set("accessToken", response.body.accessToken);
+        client.global.set("refreshToken", response.body.refreshToken);
+    });
+%}
+
+### 4. Login with Wrong Password (Should Fail)
+POST {{baseUrl}}/api/v1/auth/login
+Content-Type: application/json
+
+{
+  "email": "{{email}}",
+  "password": "wrongpassword"
+}
+
+### 5. Validate Token
+GET {{baseUrl}}/api/v1/auth/validate
+Authorization: Bearer {{accessToken}}
+
+### 6. Refresh Token
+POST {{baseUrl}}/api/v1/auth/refresh
+Content-Type: application/json
+
+{
+  "refreshToken": "{{refreshToken}}"
+}
+
+> {%
+    client.test("Token refreshed", function() {
+        client.assert(response.status === 200, "Response status is not 200");
+        client.global.set("accessToken", response.body.accessToken);
+        client.global.set("refreshToken", response.body.refreshToken);
+    });
+%}
+
+### 7. Logout
+POST {{baseUrl}}/api/v1/auth/logout
+Content-Type: application/json
+
+{
+  "refreshToken": "{{refreshToken}}"
+}
+
+### 8. Try Refresh After Logout (Should Fail)
+POST {{baseUrl}}/api/v1/auth/refresh
+Content-Type: application/json
+
+{
+  "refreshToken": "{{refreshToken}}"
+}
+

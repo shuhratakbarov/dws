@@ -1,0 +1,130 @@
+### Full Integration Test - Wallet + Ledger Service
+### Tests inter-service communication
+
+@gatewayUrl = http://localhost:8080
+@ledgerUrl = http://localhost:8084
+@email = integration-test@example.com
+@password = SecureP@ss123
+
+### =====================================================
+### STEP 1: Register/Login
+### =====================================================
+POST {{gatewayUrl}}/api/v1/auth/register
+Content-Type: application/json
+
+{
+  "email": "{{email}}",
+  "password": "{{password}}",
+  "firstName": "Integration",
+  "lastName": "Test"
+}
+
+> {%
+    client.test("Register", function() {
+        client.global.set("accessToken", response.body.accessToken);
+        client.global.set("userId", response.body.userId);
+    });
+%}
+
+### =====================================================
+### STEP 2: Create USD Wallet
+### =====================================================
+POST {{gatewayUrl}}/api/v1/wallets/me
+Content-Type: application/json
+Authorization: Bearer {{accessToken}}
+
+{
+  "currency": "USD"
+}
+
+> {%
+    client.test("Wallet created", function() {
+        client.global.set("walletId", response.body.id);
+    });
+%}
+
+### =====================================================
+### STEP 3: Deposit $500.00
+### =====================================================
+POST {{gatewayUrl}}/api/v1/wallets/{{walletId}}/deposit
+Content-Type: application/json
+Authorization: Bearer {{accessToken}}
+
+{
+  "amountMinorUnits": 50000,
+  "idempotencyKey": "integration-deposit-001",
+  "description": "Initial deposit for integration test"
+}
+
+> {%
+    client.test("Deposit successful", function() {
+        client.assert(response.status === 200);
+        client.global.set("transactionId", response.body.transactionId);
+    });
+%}
+
+### =====================================================
+### STEP 4: Check Wallet Balance
+### =====================================================
+GET {{gatewayUrl}}/api/v1/wallets/{{walletId}}
+Authorization: Bearer {{accessToken}}
+
+### =====================================================
+### STEP 5: Verify Entry in Ledger Service
+### (Wallet Service should have recorded this)
+### =====================================================
+GET {{gatewayUrl}}/api/v1/ledger/wallets/{{walletId}}/history
+Authorization: Bearer {{accessToken}}
+
+### =====================================================
+### STEP 6: Check Ledger Balance Calculation
+### =====================================================
+GET {{gatewayUrl}}/api/v1/ledger/wallets/{{walletId}}/balance
+Authorization: Bearer {{accessToken}}
+
+### =====================================================
+### STEP 7: Withdraw $100.00
+### =====================================================
+POST {{gatewayUrl}}/api/v1/wallets/{{walletId}}/withdraw
+Content-Type: application/json
+Authorization: Bearer {{accessToken}}
+
+{
+  "amountMinorUnits": 10000,
+  "idempotencyKey": "integration-withdraw-001",
+  "description": "Withdrawal test"
+}
+
+### =====================================================
+### STEP 8: Verify Both Entries in Ledger
+### =====================================================
+GET {{gatewayUrl}}/api/v1/ledger/wallets/{{walletId}}/history
+Authorization: Bearer {{accessToken}}
+
+### =====================================================
+### STEP 9: Create Second Wallet for Transfer Test
+### =====================================================
+POST {{gatewayUrl}}/api/v1/wallets/me
+Content-Type: application/json
+Authorization: Bearer {{accessToken}}
+
+{
+  "currency": "EUR"
+}
+
+### Note: Transfer between different currencies would fail
+### For transfer test, you need two wallets of same currency
+### Or create a second user with a USD wallet
+
+### =====================================================
+### STEP 10: Direct Ledger Service Health Check
+### =====================================================
+GET {{ledgerUrl}}/swagger-ui.html
+
+### =====================================================
+### Summary: After running these tests, you should see:
+### - Wallet balance: $400.00 (50000 - 10000 = 40000 cents)
+### - Ledger entries: 2 (1 CREDIT, 1 DEBIT)
+### - Ledger calculated balance: 40000
+### =====================================================
+

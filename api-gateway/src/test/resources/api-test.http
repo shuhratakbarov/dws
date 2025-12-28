@@ -1,0 +1,184 @@
+### API Gateway Test - Full Flow Through Gateway
+### All requests go through localhost:8080 (Gateway)
+
+@gatewayUrl = http://localhost:8080
+@email = gateway-test@example.com
+@password = SecureP@ss123
+
+### =====================================================
+### STEP 1: Register via Gateway (public endpoint)
+### =====================================================
+POST {{gatewayUrl}}/api/v1/auth/register
+Content-Type: application/json
+
+{
+  "email": "{{email}}",
+  "password": "{{password}}",
+  "firstName": "Gateway",
+  "lastName": "Test"
+}
+
+> {%
+    client.test("User registered", function() {
+        client.assert(response.status === 201, "Response status is not 201");
+        client.global.set("accessToken", response.body.accessToken);
+        client.global.set("refreshToken", response.body.refreshToken);
+        client.global.set("userId", response.body.userId);
+    });
+%}
+
+### =====================================================
+### STEP 2: Login via Gateway (public endpoint)
+### =====================================================
+POST {{gatewayUrl}}/api/v1/auth/login
+Content-Type: application/json
+
+{
+  "email": "{{email}}",
+  "password": "{{password}}"
+}
+
+> {%
+    client.test("Login successful", function() {
+        client.assert(response.status === 200, "Response status is not 200");
+        client.global.set("accessToken", response.body.accessToken);
+        client.global.set("refreshToken", response.body.refreshToken);
+        client.global.set("userId", response.body.userId);
+    });
+%}
+
+### =====================================================
+### STEP 3: Create Wallet for ME (uses JWT to get userId)
+### =====================================================
+POST {{gatewayUrl}}/api/v1/wallets/me
+Content-Type: application/json
+Authorization: Bearer {{accessToken}}
+
+{
+  "currency": "USD"
+}
+
+> {%
+    client.test("Wallet created", function() {
+        client.assert(response.status === 201, "Response status is not 201");
+        client.global.set("walletId", response.body.id);
+    });
+%}
+
+### =====================================================
+### STEP 4: Get MY Wallets (authenticated user's wallets)
+### =====================================================
+GET {{gatewayUrl}}/api/v1/wallets/me
+Authorization: Bearer {{accessToken}}
+
+### =====================================================
+### STEP 5: Try Create Wallet WITHOUT Token (should fail 401)
+### =====================================================
+POST {{gatewayUrl}}/api/v1/wallets/me
+Content-Type: application/json
+
+{
+  "currency": "EUR"
+}
+
+### =====================================================
+### STEP 6: Deposit via Gateway (protected)
+### =====================================================
+POST {{gatewayUrl}}/api/v1/wallets/{{walletId}}/deposit
+Content-Type: application/json
+Authorization: Bearer {{accessToken}}
+
+{
+  "amountMinorUnits": 100000,
+  "idempotencyKey": "gateway-deposit-001",
+  "description": "Initial deposit via Gateway"
+}
+
+### =====================================================
+### STEP 7: Get Wallet via Gateway (protected)
+### =====================================================
+GET {{gatewayUrl}}/api/v1/wallets/{{walletId}}
+Authorization: Bearer {{accessToken}}
+
+### =====================================================
+### STEP 8: Get Transaction History via Gateway (protected)
+### =====================================================
+GET {{gatewayUrl}}/api/v1/wallets/{{walletId}}/transactions?page=0&size=10
+Authorization: Bearer {{accessToken}}
+
+### =====================================================
+### STEP 9: Create EUR Wallet
+### =====================================================
+POST {{gatewayUrl}}/api/v1/wallets/me
+Content-Type: application/json
+Authorization: Bearer {{accessToken}}
+
+{
+  "currency": "EUR"
+}
+
+> {%
+    client.test("EUR Wallet created", function() {
+        client.assert(response.status === 201, "Response status is not 201");
+        client.global.set("eurWalletId", response.body.id);
+    });
+%}
+
+### =====================================================
+### STEP 10: Get All MY Wallets (should see 2 wallets)
+### =====================================================
+GET {{gatewayUrl}}/api/v1/wallets/me
+Authorization: Bearer {{accessToken}}
+
+### =====================================================
+### STEP 11: Withdraw from USD Wallet
+### =====================================================
+POST {{gatewayUrl}}/api/v1/wallets/{{walletId}}/withdraw
+Content-Type: application/json
+Authorization: Bearer {{accessToken}}
+
+{
+  "amountMinorUnits": 25000,
+  "idempotencyKey": "gateway-withdraw-001",
+  "description": "Withdrawal via Gateway"
+}
+
+### =====================================================
+### STEP 12: Health Check (Gateway)
+### =====================================================
+GET {{gatewayUrl}}/actuator/health
+
+### =====================================================
+### STEP 13: Refresh Token
+### =====================================================
+POST {{gatewayUrl}}/api/v1/auth/refresh
+Content-Type: application/json
+
+{
+  "refreshToken": "{{refreshToken}}"
+}
+
+> {%
+    client.test("Token refreshed", function() {
+        client.assert(response.status === 200, "Response status is not 200");
+        client.global.set("accessToken", response.body.accessToken);
+        client.global.set("refreshToken", response.body.refreshToken);
+    });
+%}
+
+### =====================================================
+### STEP 14: Rate Limiting Test
+### Run this 25+ times quickly to trigger rate limit (20/min for auth)
+### After 20 requests, you should get HTTP 429 Too Many Requests
+### =====================================================
+POST {{gatewayUrl}}/api/v1/auth/login
+Content-Type: application/json
+
+{
+  "email": "ratelimit@test.com",
+  "password": "test"
+}
+
+### Check response headers for rate limit info:
+### X-RateLimit-Limit: 20
+### X-RateLimit-Remaining: 19

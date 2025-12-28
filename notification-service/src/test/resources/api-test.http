@@ -1,0 +1,138 @@
+### Notification Service API Tests
+@gatewayUrl = http://localhost:8080
+@directUrl = http://localhost:8085
+
+### =====================================================
+### First: Login to get access token
+### =====================================================
+POST {{gatewayUrl}}/api/v1/auth/login
+Content-Type: application/json
+
+{
+  "email": "notification-test@example.com",
+  "password": "SecureP@ss123"
+}
+
+> {%
+    client.test("Login successful", function() {
+        client.global.set("accessToken", response.body.accessToken);
+        client.global.set("userId", response.body.userId);
+    });
+%}
+
+### =====================================================
+### Send Email Notification (with raw content)
+### =====================================================
+POST {{gatewayUrl}}/api/v1/notifications/send
+Content-Type: application/json
+Authorization: Bearer {{accessToken}}
+
+{
+  "userId": "{{userId}}",
+  "notificationType": "DEPOSIT_RECEIVED",
+  "channels": ["EMAIL"],
+  "recipient": "test@example.com",
+  "subject": "Test Deposit Notification",
+  "content": "<h1>You received $100.00!</h1><p>Your deposit has been processed.</p>",
+  "referenceId": "550e8400-e29b-41d4-a716-446655440000",
+  "referenceType": "TRANSACTION"
+}
+
+> {%
+    client.test("Notification sent", function() {
+        client.assert(response.status === 200);
+        client.global.set("notificationId", response.body[0].id);
+    });
+%}
+
+### =====================================================
+### Send Notification with Template
+### =====================================================
+POST {{gatewayUrl}}/api/v1/notifications/send
+Content-Type: application/json
+Authorization: Bearer {{accessToken}}
+
+{
+  "userId": "{{userId}}",
+  "notificationType": "DEPOSIT_RECEIVED",
+  "channels": ["EMAIL"],
+  "recipient": "test@example.com",
+  "templateName": "deposit-received",
+  "templateData": {
+    "userName": "John Doe",
+    "amount": "$500.00",
+    "currency": "USD",
+    "walletId": "xxx-xxx-xxx",
+    "transactionId": "txn-12345",
+    "date": "December 27, 2024",
+    "newBalance": "$1,500.00"
+  }
+}
+
+### =====================================================
+### Send Multi-Channel Notification
+### =====================================================
+POST {{gatewayUrl}}/api/v1/notifications/send
+Content-Type: application/json
+Authorization: Bearer {{accessToken}}
+
+{
+  "userId": "{{userId}}",
+  "notificationType": "LARGE_TRANSACTION",
+  "channels": ["EMAIL", "SMS", "PUSH"],
+  "recipient": "test@example.com",
+  "subject": "Large Transaction Alert",
+  "content": "A large transaction of $5,000 was detected on your account."
+}
+
+### =====================================================
+### Send Async Notification (fire-and-forget)
+### =====================================================
+POST {{gatewayUrl}}/api/v1/notifications/send-async
+Content-Type: application/json
+Authorization: Bearer {{accessToken}}
+
+{
+  "userId": "{{userId}}",
+  "notificationType": "LOGIN_ALERT",
+  "channels": ["EMAIL"],
+  "recipient": "test@example.com",
+  "templateName": "security-alert",
+  "templateData": {
+    "userName": "John",
+    "activity": "New login detected",
+    "location": "New York, USA",
+    "ipAddress": "192.168.1.100",
+    "time": "2024-12-27 10:30 AM",
+    "device": "Chrome on Windows"
+  }
+}
+
+### =====================================================
+### Get User Notification History
+### =====================================================
+GET {{gatewayUrl}}/api/v1/notifications/users/{{userId}}?page=0&size=10
+Authorization: Bearer {{accessToken}}
+
+### =====================================================
+### Get Notification by ID
+### =====================================================
+GET {{gatewayUrl}}/api/v1/notifications/{{notificationId}}
+Authorization: Bearer {{accessToken}}
+
+### =====================================================
+### Retry Failed Notifications (Admin)
+### =====================================================
+POST {{gatewayUrl}}/api/v1/notifications/retry-failed?maxAttempts=3
+Authorization: Bearer {{accessToken}}
+
+### =====================================================
+### Direct Access - Swagger UI
+### =====================================================
+GET {{directUrl}}/swagger-ui.html
+
+### =====================================================
+### MailHog Web UI (view sent emails)
+### Open in browser: http://localhost:8025
+### =====================================================
+

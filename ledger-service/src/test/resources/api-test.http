@@ -1,0 +1,91 @@
+### Ledger Service API Tests
+@gatewayUrl = http://localhost:8080
+@directUrl = http://localhost:8084
+
+### =====================================================
+### First: Login to get access token
+### =====================================================
+POST {{gatewayUrl}}/api/v1/auth/login
+Content-Type: application/json
+
+{
+  "email": "ledger-test@example.com",
+  "password": "SecureP@ss123"
+}
+
+> {%
+    client.test("Login successful", function() {
+        client.global.set("accessToken", response.body.accessToken);
+        client.global.set("userId", response.body.userId);
+    });
+%}
+
+### =====================================================
+### Create a ledger entry (internal API - normally called by Wallet Service)
+### =====================================================
+POST {{gatewayUrl}}/api/v1/ledger/entries
+Content-Type: application/json
+Authorization: Bearer {{accessToken}}
+
+{
+  "walletId": "550e8400-e29b-41d4-a716-446655440000",
+  "userId": "{{userId}}",
+  "entryType": "CREDIT",
+  "transactionType": "DEPOSIT",
+  "amountMinorUnits": 50000,
+  "currency": "USD",
+  "balanceAfter": 50000,
+  "transactionId": "660e8400-e29b-41d4-a716-446655440001",
+  "idempotencyKey": "ledger-test-001",
+  "description": "Initial deposit"
+}
+
+> {%
+    client.test("Entry created", function() {
+        client.assert(response.status === 201 || response.status === 200);
+        client.global.set("entryId", response.body.id);
+        client.global.set("transactionId", response.body.transactionId);
+    });
+%}
+
+### =====================================================
+### Get ledger entry by ID
+### =====================================================
+GET {{gatewayUrl}}/api/v1/ledger/entries/{{entryId}}
+Authorization: Bearer {{accessToken}}
+
+### =====================================================
+### Get wallet transaction history
+### =====================================================
+GET {{gatewayUrl}}/api/v1/ledger/wallets/550e8400-e29b-41d4-a716-446655440000/history?page=0&size=10
+Authorization: Bearer {{accessToken}}
+
+### =====================================================
+### Get user transaction history (all wallets)
+### =====================================================
+GET {{gatewayUrl}}/api/v1/ledger/users/{{userId}}/history?page=0&size=10
+Authorization: Bearer {{accessToken}}
+
+### =====================================================
+### Get transaction details (both sides of transfer)
+### =====================================================
+GET {{gatewayUrl}}/api/v1/ledger/transactions/{{transactionId}}
+Authorization: Bearer {{accessToken}}
+
+### =====================================================
+### Calculate balance from ledger
+### =====================================================
+GET {{gatewayUrl}}/api/v1/ledger/wallets/550e8400-e29b-41d4-a716-446655440000/balance
+Authorization: Bearer {{accessToken}}
+
+### =====================================================
+### Check idempotency key
+### =====================================================
+GET {{gatewayUrl}}/api/v1/ledger/idempotency/ledger-test-001
+Authorization: Bearer {{accessToken}}
+
+### =====================================================
+### Direct Access - Swagger UI
+### =====================================================
+GET {{directUrl}}/swagger-ui.html
+

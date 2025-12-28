@@ -1,0 +1,171 @@
+# Docker Compose for Digital Wallet System
+# Starts all microservices + PostgreSQL databases
+
+version: '3.8'
+
+services:
+  # ==================== DATABASES ====================
+  postgres:
+    image: postgres:15-alpine
+    container_name: dws-postgres
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-24112004}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./init-databases.sql:/docker-entrypoint-initdb.d/init.sql
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - dws-network
+
+  # ==================== API GATEWAY ====================
+  api-gateway:
+    build:
+      context: ./api-gateway
+      dockerfile: Dockerfile
+    container_name: dws-api-gateway
+    ports:
+      - "8080:8080"
+    environment:
+      - JWT_SECRET=${JWT_SECRET:-dGhpcyBpcyBhIHZlcnkgbG9uZyBzZWNyZXQga2V5IGZvciBqd3QgdG9rZW4gc2lnbmluZyB0aGF0IHNob3VsZCBiZSBhdCBsZWFzdCA1MTIgYml0cw==}
+      - AUTH_SERVICE_URL=http://auth-service:8081
+      - WALLET_SERVICE_URL=http://wallet-service:8082
+      - CUSTOMER_SERVICE_URL=http://customer-service:8083
+      - LEDGER_SERVICE_URL=http://ledger-service:8084
+      - NOTIFICATION_SERVICE_URL=http://notification-service:8085
+    depends_on:
+      - auth-service
+      - wallet-service
+      - customer-service
+      - ledger-service
+      - notification-service
+    networks:
+      - dws-network
+
+  # ==================== AUTH SERVICE ====================
+  auth-service:
+    build:
+      context: ./auth-service
+      dockerfile: Dockerfile
+    container_name: dws-auth-service
+    ports:
+      - "8081:8081"
+    environment:
+      - DB_URL=jdbc:postgresql://postgres:5432/auth_db
+      - DB_USERNAME=postgres
+      - DB_PASSWORD=${DB_PASSWORD:-24112004}
+      - JWT_SECRET=${JWT_SECRET:-dGhpcyBpcyBhIHZlcnkgbG9uZyBzZWNyZXQga2V5IGZvciBqd3QgdG9rZW4gc2lnbmluZyB0aGF0IHNob3VsZCBiZSBhdCBsZWFzdCA1MTIgYml0cw==}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - dws-network
+
+  # ==================== WALLET SERVICE ====================
+  wallet-service:
+    build:
+      context: ./wallet-service
+      dockerfile: Dockerfile
+    container_name: dws-wallet-service
+    ports:
+      - "8082:8082"
+    environment:
+      - DB_URL=jdbc:postgresql://postgres:5432/wallet_db
+      - DB_USERNAME=postgres
+      - DB_PASSWORD=${DB_PASSWORD:-24112004}
+      - LEDGER_SERVICE_URL=http://ledger-service:8084
+      - NOTIFICATION_SERVICE_URL=http://notification-service:8085
+    depends_on:
+      postgres:
+        condition: service_healthy
+      ledger-service:
+        condition: service_started
+      notification-service:
+        condition: service_started
+    networks:
+      - dws-network
+
+  # ==================== CUSTOMER SERVICE ====================
+  customer-service:
+    build:
+      context: ./customer-service
+      dockerfile: Dockerfile
+    container_name: dws-customer-service
+    ports:
+      - "8083:8083"
+    environment:
+      - DB_URL=jdbc:postgresql://postgres:5432/customer_db
+      - DB_USERNAME=postgres
+      - DB_PASSWORD=${DB_PASSWORD:-24112004}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - dws-network
+
+  # ==================== LEDGER SERVICE ====================
+  ledger-service:
+    build:
+      context: ./ledger-service
+      dockerfile: Dockerfile
+    container_name: dws-ledger-service
+    ports:
+      - "8084:8084"
+    environment:
+      - DB_URL=jdbc:postgresql://postgres:5432/ledger_db
+      - DB_USERNAME=postgres
+      - DB_PASSWORD=${DB_PASSWORD:-24112004}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - dws-network
+
+  # ==================== NOTIFICATION SERVICE ====================
+  notification-service:
+    build:
+      context: ./notification-service
+      dockerfile: Dockerfile
+    container_name: dws-notification-service
+    ports:
+      - "8085:8085"
+    environment:
+      - DB_URL=jdbc:postgresql://postgres:5432/notification_db
+      - DB_USERNAME=postgres
+      - DB_PASSWORD=${DB_PASSWORD:-24112004}
+      - EMAIL_ENABLED=true
+      - SMS_ENABLED=false
+      - PUSH_ENABLED=false
+      - MAIL_HOST=mailhog
+      - MAIL_PORT=1025
+    depends_on:
+      postgres:
+        condition: service_healthy
+      mailhog:
+        condition: service_started
+    networks:
+      - dws-network
+
+  # ==================== MAILHOG (Email Testing) ====================
+  mailhog:
+    image: mailhog/mailhog
+    container_name: dws-mailhog
+    ports:
+      - "1025:1025"  # SMTP
+      - "8025:8025"  # Web UI
+    networks:
+      - dws-network
+
+networks:
+  dws-network:
+    driver: bridge
+
+volumes:
+  postgres_data:
+

@@ -1,0 +1,46 @@
+### Create Wallet 1 (USD)
+POST http://localhost:8080/api/v1/wallets
+Content-Type: application/json
+
+{
+  "userId": "{{$random.uuid}}",
+  "currency": "USD"
+}
+
+> {% client.global.set("wallet1Id", response.body.id); %}
+
+### Create Wallet 2 (USD)
+POST http://localhost:8080/api/v1/wallets
+Content-Type: application/json
+
+{
+  "userId": "{{$random.uuid}}",
+  "currency": "USD"
+}
+
+> {% client.global.set("wallet2Id", response.body.id); %}
+
+### Deposit $1000 to Wallet 1
+POST http://localhost:8080/api/v1/wallets/{{wallet1Id}}/deposit
+Content-Type: application/json
+
+{
+  "amountMinorUnits": 100000,
+  "idempotencyKey": "deposit-{{$timestamp}}",
+  "description": "Initial deposit"
+}
+
+### Transfer $300 from Wallet 1 to Wallet 2
+POST http://localhost:8080/api/v1/wallets/transfer
+Content-Type: application/json
+
+{
+  "fromWalletId": "{{wallet1Id}}",
+  "toWalletId": "{{wallet2Id}}",
+  "amountMinorUnits": 30000,
+  "idempotencyKey": "transfer-{{$timestamp}}",
+  "description": "Test transfer"
+}
+
+### Trigger Manual Reconciliation
+POST http://localhost:8080/api/v1/admin/reconcile

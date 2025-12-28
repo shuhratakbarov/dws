@@ -1,0 +1,121 @@
+### Variables
+@baseUrl = http://localhost:8080
+@userId = 123e4567-e89b-12d3-a456-426614174000
+
+### 1. Create USD Wallet
+POST {{baseUrl}}/api/v1/wallets
+Content-Type: application/json
+
+{
+  "userId": "{{userId}}",
+  "currency": "USD"
+}
+
+> {%
+    client.test("Wallet created", function() {
+        client.assert(response.status === 201, "Response status is not 201");
+        client.global.set("walletId", response.body.id);
+    });
+%}
+
+### 2. Create EUR Wallet
+POST {{baseUrl}}/api/v1/wallets
+Content-Type: application/json
+
+{
+  "userId": "{{userId}}",
+  "currency": "EUR"
+}
+
+### 3. Deposit $500.00 (50000 cents)
+POST {{baseUrl}}/api/v1/wallets/{{walletId}}/deposit
+Content-Type: application/json
+
+{
+  "amountMinorUnits": 50000,
+  "idempotencyKey": "deposit-001-{{$random.uuid}}",
+  "description": "Initial deposit"
+}
+
+### 4. Deposit €250.00 (25000 cents) - Test Idempotency
+POST {{baseUrl}}/api/v1/wallets/{{walletId}}/deposit
+Content-Type: application/json
+
+{
+  "amountMinorUnits": 25000,
+  "idempotencyKey": "deposit-idempotent-key",
+  "description": "Test idempotency"
+}
+
+### 5. Retry Same Deposit (Should Return Same Result)
+POST {{baseUrl}}/api/v1/wallets/{{walletId}}/deposit
+Content-Type: application/json
+
+{
+  "amountMinorUnits": 25000,
+  "idempotencyKey": "deposit-idempotent-key",
+  "description": "Test idempotency"
+}
+
+### 6. Withdraw $100.00 (10000 cents)
+POST {{baseUrl}}/api/v1/wallets/{{walletId}}/withdraw
+Content-Type: application/json
+
+{
+  "amountMinorUnits": 10000,
+  "idempotencyKey": "withdraw-001-{{$random.uuid}}",
+  "description": "Purchase"
+}
+
+### 7. Try to Withdraw More Than Balance (Should Fail)
+POST {{baseUrl}}/api/v1/wallets/{{walletId}}/withdraw
+Content-Type: application/json
+
+{
+  "amountMinorUnits": 1000000,
+  "idempotencyKey": "withdraw-002-{{$random.uuid}}",
+  "description": "Insufficient funds test"
+}
+
+### 8. Try to Create Duplicate Wallet (Should Fail)
+POST {{baseUrl}}/api/v1/wallets
+Content-Type: application/json
+
+{
+  "userId": "{{userId}}",
+  "currency": "USD"
+}
+
+### 9. Get Wallet by ID
+GET {{baseUrl}}/api/v1/wallets/{{walletId}}
+Accept: application/json
+
+### 10. Get All Wallets for User
+GET {{baseUrl}}/api/v1/wallets/user/{{userId}}
+Accept: application/json
+
+### 11. Get Transaction History (First Page)
+GET {{baseUrl}}/api/v1/wallets/{{walletId}}/transactions?page=0&size=10
+Accept: application/json
+
+### 12. Freeze Wallet (Admin)
+POST {{baseUrl}}/api/v1/admin/wallets/{{walletId}}/freeze
+Accept: application/json
+
+### 13. Try Deposit on Frozen Wallet (Should Fail)
+POST {{baseUrl}}/api/v1/wallets/{{walletId}}/deposit
+Content-Type: application/json
+
+{
+  "amountMinorUnits": 1000,
+  "idempotencyKey": "deposit-frozen-{{$random.uuid}}",
+  "description": "Should fail - wallet frozen"
+}
+
+### 14. Unfreeze Wallet (Admin)
+POST {{baseUrl}}/api/v1/admin/wallets/{{walletId}}/unfreeze
+Accept: application/json
+
+### 15. Trigger Manual Reconciliation (Admin)
+POST {{baseUrl}}/api/v1/admin/reconcile
+Accept: application/json

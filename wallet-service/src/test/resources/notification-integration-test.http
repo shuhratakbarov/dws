@@ -1,0 +1,128 @@
+### Full Integration Test - Wallet + Ledger + Notification
+### After running, check MailHog UI at http://localhost:8025
+
+@gatewayUrl = http://localhost:8080
+@mailhogUrl = http://localhost:8025
+@email = notification-flow-test@example.com
+@password = SecureP@ss123
+
+### =====================================================
+### STEP 1: Register User
+### =====================================================
+POST {{gatewayUrl}}/api/v1/auth/register
+Content-Type: application/json
+
+{
+  "email": "{{email}}",
+  "password": "{{password}}",
+  "firstName": "Notification",
+  "lastName": "Test"
+}
+
+> {%
+    client.test("User registered", function() {
+        client.global.set("accessToken", response.body.accessToken);
+        client.global.set("userId", response.body.userId);
+    });
+%}
+
+### =====================================================
+### STEP 2: Create USD Wallet
+### =====================================================
+POST {{gatewayUrl}}/api/v1/wallets/me
+Content-Type: application/json
+Authorization: Bearer {{accessToken}}
+
+{
+  "currency": "USD"
+}
+
+> {%
+    client.test("Wallet created", function() {
+        client.global.set("walletId", response.body.id);
+    });
+%}
+
+### =====================================================
+### STEP 3: Deposit $500 → Should trigger EMAIL notification
+### Check MailHog after this: http://localhost:8025
+### =====================================================
+POST {{gatewayUrl}}/api/v1/wallets/{{walletId}}/deposit
+Content-Type: application/json
+Authorization: Bearer {{accessToken}}
+
+{
+  "amountMinorUnits": 50000,
+  "idempotencyKey": "notif-deposit-001",
+  "description": "Initial deposit - notification test"
+}
+
+### =====================================================
+### STEP 4: Deposit $1500 → Should trigger LARGE TRANSACTION alert
+### (threshold is $1000 = 100000 cents)
+### =====================================================
+POST {{gatewayUrl}}/api/v1/wallets/{{walletId}}/deposit
+Content-Type: application/json
+Authorization: Bearer {{accessToken}}
+
+{
+  "amountMinorUnits": 150000,
+  "idempotencyKey": "notif-large-deposit-001",
+  "description": "Large deposit - should trigger alert"
+}
+
+### =====================================================
+### STEP 5: Withdraw $200 → Should trigger EMAIL notification
+### =====================================================
+POST {{gatewayUrl}}/api/v1/wallets/{{walletId}}/withdraw
+Content-Type: application/json
+Authorization: Bearer {{accessToken}}
+
+{
+  "amountMinorUnits": 20000,
+  "idempotencyKey": "notif-withdraw-001",
+  "description": "Withdrawal test"
+}
+
+### =====================================================
+### STEP 6: Check Wallet Balance
+### Expected: $500 + $1500 - $200 = $1800 = 180000 cents
+### =====================================================
+GET {{gatewayUrl}}/api/v1/wallets/{{walletId}}
+Authorization: Bearer {{accessToken}}
+
+### =====================================================
+### STEP 7: Check Notification History
+### =====================================================
+GET {{gatewayUrl}}/api/v1/notifications/users/{{userId}}?page=0&size=10
+Authorization: Bearer {{accessToken}}
+
+### =====================================================
+### STEP 8: Check Ledger History
+### =====================================================
+GET {{gatewayUrl}}/api/v1/ledger/wallets/{{walletId}}/history?page=0&size=10
+Authorization: Bearer {{accessToken}}
+
+### =====================================================
+### VERIFICATION STEPS:
+###
+### 1. Open MailHog UI: http://localhost:8025
+### 2. You should see 4 emails:
+###    - Deposit Received ($500)
+###    - Deposit Received ($1500)
+###    - Large Transaction Alert ($1500)
+###    - Withdrawal Completed ($200)
+###
+### 3. Click on each email to see the HTML content
+### =====================================================
+
+### =====================================================
+### MailHog API - List all messages
+### =====================================================
+GET {{mailhogUrl}}/api/v2/messages
+
+### =====================================================
+### MailHog API - Delete all messages (cleanup)
+### =====================================================
+DELETE {{mailhogUrl}}/api/v1/messages
+

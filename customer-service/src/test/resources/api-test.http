@@ -1,0 +1,103 @@
+### Customer Service API Tests
+@gatewayUrl = http://localhost:8080
+@directUrl = http://localhost:8083
+@email = customer-test@example.com
+@password = SecureP@ss123
+
+### =====================================================
+### STEP 1: Register user via Auth Service
+### =====================================================
+POST {{gatewayUrl}}/api/v1/auth/register
+Content-Type: application/json
+
+{
+  "email": "{{email}}",
+  "password": "{{password}}",
+  "firstName": "Customer",
+  "lastName": "Test"
+}
+
+> {%
+    client.test("User registered", function() {
+        client.assert(response.status === 201, "Response status is not 201");
+        client.global.set("accessToken", response.body.accessToken);
+        client.global.set("userId", response.body.userId);
+    });
+%}
+
+### =====================================================
+### STEP 2: Create Customer Profile
+### =====================================================
+POST {{gatewayUrl}}/api/v1/customers
+Content-Type: application/json
+Authorization: Bearer {{accessToken}}
+
+{
+  "userId": "{{userId}}",
+  "firstName": "Customer",
+  "lastName": "Test",
+  "phoneNumber": "+1234567890"
+}
+
+> {%
+    client.test("Customer created", function() {
+        client.assert(response.status === 201, "Response status is not 201");
+        client.global.set("customerId", response.body.id);
+    });
+%}
+
+### =====================================================
+### STEP 3: Get My Profile
+### =====================================================
+GET {{gatewayUrl}}/api/v1/customers/me
+Authorization: Bearer {{accessToken}}
+
+### =====================================================
+### STEP 4: Update My Profile
+### =====================================================
+PUT {{gatewayUrl}}/api/v1/customers/me
+Content-Type: application/json
+Authorization: Bearer {{accessToken}}
+
+{
+  "phoneNumber": "+9876543210",
+  "dateOfBirth": "1990-05-15",
+  "address": {
+    "street": "123 Main Street",
+    "city": "New York",
+    "state": "NY",
+    "postalCode": "10001",
+    "country": "USA"
+  }
+}
+
+### =====================================================
+### STEP 5: Get Customer by ID
+### =====================================================
+GET {{gatewayUrl}}/api/v1/customers/{{customerId}}
+Authorization: Bearer {{accessToken}}
+
+### =====================================================
+### STEP 6: Get Customer by User ID
+### =====================================================
+GET {{gatewayUrl}}/api/v1/customers/user/{{userId}}
+Authorization: Bearer {{accessToken}}
+
+### =====================================================
+### STEP 7: Try Create Duplicate (should fail 409)
+### =====================================================
+POST {{gatewayUrl}}/api/v1/customers
+Content-Type: application/json
+Authorization: Bearer {{accessToken}}
+
+{
+  "userId": "{{userId}}",
+  "firstName": "Duplicate",
+  "lastName": "Test"
+}
+
+### =====================================================
+### Direct Access Test (without gateway)
+### =====================================================
+GET {{directUrl}}/swagger-ui.html
+
