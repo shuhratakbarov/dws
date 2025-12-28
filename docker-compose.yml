@@ -162,6 +162,23 @@ services:
     networks:
       - dws-network
 
+  # ==================== FRONTEND ====================
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: dws-frontend
+    ports:
+      - "3000:80"
+    depends_on:
+      - api-gateway
+    networks:
+      - dws-network
+    deploy:
+      resources:
+        limits:
+          memory: 128M
+
 networks:
   dws-network:
     driver: bridge
