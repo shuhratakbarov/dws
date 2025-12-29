@@ -26,9 +26,7 @@
 
 ---
 
-A full-stack digital wallet application demonstrating **microservices architecture** with Spring Boot and React. Users can create multi-currency wallets, deposit/withdraw funds, transfer between wallets, and view transaction history.
-
-> **📚 Learning Project**: This project was built step-by-step as a learning journey into microservices architecture. It demonstrates real-world patterns used in fintech applications.
+A full-stack digital wallet application built with **microservices architecture** using Spring Boot and React. Users can create multi-currency wallets, deposit/withdraw funds, transfer between wallets, and view transaction history.
 
 ## ✨ Key Features
 
@@ -91,10 +89,15 @@ cd DWS
 # Create .env file
 cp .env.example .env
 
-# Start all services (backend + frontend)
-docker-compose up -d
+# Start all services with dev profile (includes MailHog for email testing)
+docker-compose --profile dev up -d
+
+# Or for production profile (no MailHog)
+docker-compose --profile prod up -d
 
 # Open frontend: http://localhost:3000
+# View email testing: http://localhost:8025 (dev only)
+
 # View logs
 docker-compose logs -f
 
@@ -282,7 +285,9 @@ DWS/
 ### DevOps
 - **Docker** - Containerization
 - **GitHub Actions** - CI/CD
-- **Heroku/Railway** - Cloud deployment
+- **Heroku** - Backend hosting
+- **Azure Static Web Apps** - Frontend hosting
+- **Supabase** - PostgreSQL database
 
 ## Key Features
 
@@ -301,11 +306,11 @@ DWS/
 
 ## Deployment
 
-See [DEPLOYMENT.md](./DEPLOYMENT.md) for detailed deployment instructions:
-- Heroku (with GitHub Student credits)
-- Railway
-- Render
-- Docker deployment
+See [DEPLOYMENT.md](./DEPLOYMENT.md) for production deployment instructions.
+
+## Contributing
+
+See [CONTRIBUTING.md](./CONTRIBUTING.md) for contribution guidelines.
 
 ## License
 

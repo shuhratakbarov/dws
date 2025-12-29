@@ -1,0 +1,29 @@
+# Test profile for Wallet Service
+# Used with Testcontainers for integration testing
+
+spring:
+  config:
+    activate:
+      on-profile: test
+
+  datasource:
+    url: jdbc:tc:postgresql:15-alpine:///testdb
+    driver-class-name: org.testcontainers.jdbc.ContainerDatabaseDriver
+
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+    show-sql: false
+
+services:
+  ledger:
+    url: http://localhost:8084
+    enabled: false
+  notification:
+    url: http://localhost:8085
+    enabled: false
+
+logging:
+  level:
+    root: WARN
+

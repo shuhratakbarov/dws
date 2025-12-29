@@ -1,0 +1,237 @@
+# GitHub Actions workflow for deploying backend services to Heroku
+# Uses Heroku Eco Dynos with Container Registry
+
+name: Deploy Backend to Heroku
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'api-gateway/**'
+      - 'auth-service/**'
+      - 'wallet-service/**'
+      - 'customer-service/**'
+      - 'ledger-service/**'
+      - 'notification-service/**'
+      - '.github/workflows/backend-deploy.yml'
+  workflow_dispatch:  # Allow manual trigger
+
+env:
+  HEROKU_API_KEY: ${{ secrets.HEROKU_API_KEY }}
+
+jobs:
+  detect-changes:
+    runs-on: ubuntu-latest
+    outputs:
+      api-gateway: ${{ steps.changes.outputs.api-gateway }}
+      auth-service: ${{ steps.changes.outputs.auth-service }}
+      wallet-service: ${{ steps.changes.outputs.wallet-service }}
+      customer-service: ${{ steps.changes.outputs.customer-service }}
+      ledger-service: ${{ steps.changes.outputs.ledger-service }}
+      notification-service: ${{ steps.changes.outputs.notification-service }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dorny/paths-filter@v3
+        id: changes
+        with:
+          filters: |
+            api-gateway:
+              - 'api-gateway/**'
+            auth-service:
+              - 'auth-service/**'
+            wallet-service:
+              - 'wallet-service/**'
+            customer-service:
+              - 'customer-service/**'
+            ledger-service:
+              - 'ledger-service/**'
+            notification-service:
+              - 'notification-service/**'
+
+  deploy-api-gateway:
+    needs: detect-changes
+    if: needs.detect-changes.outputs.api-gateway == 'true' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+          cache: maven
+
+      - name: Build with Maven
+        working-directory: api-gateway
+        run: ./mvnw package -DskipTests -B
+
+      - name: Login to Heroku Container Registry
+        run: heroku container:login
+        env:
+          HEROKU_API_KEY: ${{ secrets.HEROKU_API_KEY }}
+
+      - name: Build and Push Docker Image
+        working-directory: api-gateway
+        run: |
+          heroku container:push web -a ${{ secrets.HEROKU_APP_API_GATEWAY }}
+
+      - name: Release
+        run: heroku container:release web -a ${{ secrets.HEROKU_APP_API_GATEWAY }}
+
+  deploy-auth-service:
+    needs: detect-changes
+    if: needs.detect-changes.outputs.auth-service == 'true' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+          cache: maven
+
+      - name: Build with Maven
+        working-directory: auth-service
+        run: ./mvnw package -DskipTests -B
+
+      - name: Login to Heroku Container Registry
+        run: heroku container:login
+        env:
+          HEROKU_API_KEY: ${{ secrets.HEROKU_API_KEY }}
+
+      - name: Build and Push Docker Image
+        working-directory: auth-service
+        run: |
+          heroku container:push web -a ${{ secrets.HEROKU_APP_AUTH }}
+
+      - name: Release
+        run: heroku container:release web -a ${{ secrets.HEROKU_APP_AUTH }}
+
+  deploy-wallet-service:
+    needs: detect-changes
+    if: needs.detect-changes.outputs.wallet-service == 'true' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+          cache: maven
+
+      - name: Build with Maven
+        working-directory: wallet-service
+        run: ./mvnw package -DskipTests -B
+
+      - name: Login to Heroku Container Registry
+        run: heroku container:login
+        env:
+          HEROKU_API_KEY: ${{ secrets.HEROKU_API_KEY }}
+
+      - name: Build and Push Docker Image
+        working-directory: wallet-service
+        run: |
+          heroku container:push web -a ${{ secrets.HEROKU_APP_WALLET }}
+
+      - name: Release
+        run: heroku container:release web -a ${{ secrets.HEROKU_APP_WALLET }}
+
+  deploy-customer-service:
+    needs: detect-changes
+    if: needs.detect-changes.outputs.customer-service == 'true' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+          cache: maven
+
+      - name: Build with Maven
+        working-directory: customer-service
+        run: ./mvnw package -DskipTests -B
+
+      - name: Login to Heroku Container Registry
+        run: heroku container:login
+        env:
+          HEROKU_API_KEY: ${{ secrets.HEROKU_API_KEY }}
+
+      - name: Build and Push Docker Image
+        working-directory: customer-service
+        run: |
+          heroku container:push web -a ${{ secrets.HEROKU_APP_CUSTOMER }}
+
+      - name: Release
+        run: heroku container:release web -a ${{ secrets.HEROKU_APP_CUSTOMER }}
+
+  deploy-ledger-service:
+    needs: detect-changes
+    if: needs.detect-changes.outputs.ledger-service == 'true' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+          cache: maven
+
+      - name: Build with Maven
+        working-directory: ledger-service
+        run: ./mvnw package -DskipTests -B
+
+      - name: Login to Heroku Container Registry
+        run: heroku container:login
+        env:
+          HEROKU_API_KEY: ${{ secrets.HEROKU_API_KEY }}
+
+      - name: Build and Push Docker Image
+        working-directory: ledger-service
+        run: |
+          heroku container:push web -a ${{ secrets.HEROKU_APP_LEDGER }}
+
+      - name: Release
+        run: heroku container:release web -a ${{ secrets.HEROKU_APP_LEDGER }}
+
+  deploy-notification-service:
+    needs: detect-changes
+    if: needs.detect-changes.outputs.notification-service == 'true' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+          cache: maven
+
+      - name: Build with Maven
+        working-directory: notification-service
+        run: ./mvnw package -DskipTests -B
+
+      - name: Login to Heroku Container Registry
+        run: heroku container:login
+        env:
+          HEROKU_API_KEY: ${{ secrets.HEROKU_API_KEY }}
+
+      - name: Build and Push Docker Image
+        working-directory: notification-service
+        run: |
+          heroku container:push web -a ${{ secrets.HEROKU_APP_NOTIFICATION }}
+
+      - name: Release
+        run: heroku container:release web -a ${{ secrets.HEROKU_APP_NOTIFICATION }}
+

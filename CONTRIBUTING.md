@@ -43,19 +43,20 @@ Thank you for considering contributing to this project! This is a learning proje
 
 ```bash
 # Clone the repo
-git clone https://github.com/YOUR_USERNAME/digital-wallet-system.git
-cd digital-wallet-system
+git clone https://github.com/shuhratakbarov/dws.git
+cd dws
 
 # Copy environment file
 cp .env.example .env
 # Edit .env with your settings
 
-# Start with Docker Compose
-docker-compose up -d
+# Start with Docker Compose (dev profile includes MailHog)
+docker-compose --profile dev up -d
 
 # Access the application
 # Frontend: http://localhost:3000
 # API Gateway: http://localhost:8080
+# MailHog (email testing): http://localhost:8025
 ```
 
 ### Running Tests

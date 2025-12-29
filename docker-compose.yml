@@ -1,13 +1,19 @@
 # Docker Compose for Digital Wallet System
-# Starts all microservices + PostgreSQL databases
+# Supports profiles: dev (default), prod
+#
+# Usage:
+#   Development (with Mailhog): docker-compose up -d
+#   Development explicit:       docker-compose --profile dev up -d
+#   Production (no Mailhog):    docker-compose --profile prod up -d
 
-version: '3.8'
+version: '3.9'
 
 services:
   # ==================== DATABASES ====================
   postgres:
     image: postgres:15-alpine
     container_name: dws-postgres
+    profiles: ["dev", "prod"]
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: ${DB_PASSWORD:-24112004}
@@ -23,6 +29,10 @@ services:
       retries: 5
     networks:
       - dws-network
+    deploy:
+      resources:
+        limits:
+          memory: 256M
 
   # ==================== API GATEWAY ====================
   api-gateway:
@@ -30,15 +40,18 @@ services:
       context: ./api-gateway
       dockerfile: Dockerfile
     container_name: dws-api-gateway
+    profiles: ["dev", "prod"]
     ports:
       - "8080:8080"
     environment:
+      - SPRING_PROFILES_ACTIVE=${SPRING_PROFILES_ACTIVE:-dev}
       - JWT_SECRET=${JWT_SECRET:-dGhpcyBpcyBhIHZlcnkgbG9uZyBzZWNyZXQga2V5IGZvciBqd3QgdG9rZW4gc2lnbmluZyB0aGF0IHNob3VsZCBiZSBhdCBsZWFzdCA1MTIgYml0cw==}
       - AUTH_SERVICE_URL=http://auth-service:8081
       - WALLET_SERVICE_URL=http://wallet-service:8082
       - CUSTOMER_SERVICE_URL=http://customer-service:8083
       - LEDGER_SERVICE_URL=http://ledger-service:8084
       - NOTIFICATION_SERVICE_URL=http://notification-service:8085
+      - FRONTEND_URL=${FRONTEND_URL:-http://localhost:3000}
     depends_on:
       - auth-service
       - wallet-service
@@ -47,6 +60,10 @@ services:
       - notification-service
     networks:
       - dws-network
+    deploy:
+      resources:
+        limits:
+          memory: 256M
 
   # ==================== AUTH SERVICE ====================
   auth-service:
@@ -54,9 +71,11 @@ services:
       context: ./auth-service
       dockerfile: Dockerfile
     container_name: dws-auth-service
+    profiles: ["dev", "prod"]
     ports:
       - "8081:8081"
     environment:
+      - SPRING_PROFILES_ACTIVE=${SPRING_PROFILES_ACTIVE:-dev}
       - DB_URL=jdbc:postgresql://postgres:5432/auth_db
       - DB_USERNAME=postgres
       - DB_PASSWORD=${DB_PASSWORD:-24112004}
@@ -66,6 +85,10 @@ services:
         condition: service_healthy
     networks:
       - dws-network
+    deploy:
+      resources:
+        limits:
+          memory: 256M
 
   # ==================== WALLET SERVICE ====================
   wallet-service:
@@ -73,9 +96,11 @@ services:
       context: ./wallet-service
       dockerfile: Dockerfile
     container_name: dws-wallet-service
+    profiles: ["dev", "prod"]
     ports:
       - "8082:8082"
     environment:
+      - SPRING_PROFILES_ACTIVE=${SPRING_PROFILES_ACTIVE:-dev}
       - DB_URL=jdbc:postgresql://postgres:5432/wallet_db
       - DB_USERNAME=postgres
       - DB_PASSWORD=${DB_PASSWORD:-24112004}
@@ -90,6 +115,10 @@ services:
         condition: service_started
     networks:
       - dws-network
+    deploy:
+      resources:
+        limits:
+          memory: 256M
 
   # ==================== CUSTOMER SERVICE ====================
   customer-service:
@@ -97,9 +126,11 @@ services:
       context: ./customer-service
       dockerfile: Dockerfile
     container_name: dws-customer-service
+    profiles: ["dev", "prod"]
     ports:
       - "8083:8083"
     environment:
+      - SPRING_PROFILES_ACTIVE=${SPRING_PROFILES_ACTIVE:-dev}
       - DB_URL=jdbc:postgresql://postgres:5432/customer_db
       - DB_USERNAME=postgres
       - DB_PASSWORD=${DB_PASSWORD:-24112004}
@@ -108,6 +139,10 @@ services:
         condition: service_healthy
     networks:
       - dws-network
+    deploy:
+      resources:
+        limits:
+          memory: 256M
 
   # ==================== LEDGER SERVICE ====================
   ledger-service:
@@ -115,9 +150,11 @@ services:
       context: ./ledger-service
       dockerfile: Dockerfile
     container_name: dws-ledger-service
+    profiles: ["dev", "prod"]
     ports:
       - "8084:8084"
     environment:
+      - SPRING_PROFILES_ACTIVE=${SPRING_PROFILES_ACTIVE:-dev}
       - DB_URL=jdbc:postgresql://postgres:5432/ledger_db
       - DB_USERNAME=postgres
       - DB_PASSWORD=${DB_PASSWORD:-24112004}
@@ -126,6 +163,10 @@ services:
         condition: service_healthy
     networks:
       - dws-network
+    deploy:
+      resources:
+        limits:
+          memory: 256M
 
   # ==================== NOTIFICATION SERVICE ====================
   notification-service:
@@ -133,41 +174,58 @@ services:
       context: ./notification-service
       dockerfile: Dockerfile
     container_name: dws-notification-service
+    profiles: ["dev", "prod"]
     ports:
       - "8085:8085"
     environment:
+      - SPRING_PROFILES_ACTIVE=${SPRING_PROFILES_ACTIVE:-dev}
       - DB_URL=jdbc:postgresql://postgres:5432/notification_db
       - DB_USERNAME=postgres
       - DB_PASSWORD=${DB_PASSWORD:-24112004}
       - EMAIL_ENABLED=true
       - SMS_ENABLED=false
       - PUSH_ENABLED=false
-      - MAIL_HOST=mailhog
-      - MAIL_PORT=1025
+      # Dev: Use MailHog | Prod: Use Testmail or real SMTP
+      - MAIL_HOST=${MAIL_HOST:-mailhog}
+      - MAIL_PORT=${MAIL_PORT:-1025}
+      - MAIL_USERNAME=${MAIL_USERNAME:-}
+      - MAIL_PASSWORD=${MAIL_PASSWORD:-}
+      - MAIL_AUTH=${MAIL_AUTH:-false}
+      - MAIL_STARTTLS=${MAIL_STARTTLS:-false}
     depends_on:
       postgres:
         condition: service_healthy
-      mailhog:
-        condition: service_started
     networks:
       - dws-network
+    deploy:
+      resources:
+        limits:
+          memory: 256M
 
-  # ==================== MAILHOG (Email Testing) ====================
+  # ==================== MAILHOG (Dev Only - Email Testing) ====================
   mailhog:
     image: mailhog/mailhog
     container_name: dws-mailhog
+    profiles: ["dev"]  # Only runs in dev profile
     ports:
       - "1025:1025"  # SMTP
       - "8025:8025"  # Web UI
     networks:
       - dws-network
+    deploy:
+      resources:
+        limits:
+          memory: 64M
 
   # ==================== FRONTEND ====================
   frontend:
     build:
       context: ./frontend
       dockerfile: Dockerfile
+      args:
+        - VITE_API_URL=${VITE_API_URL:-/api/v1}
     container_name: dws-frontend
+    profiles: ["dev", "prod"]
     ports:
       - "3000:80"
     depends_on:

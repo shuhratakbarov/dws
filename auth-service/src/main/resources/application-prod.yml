@@ -1,21 +1,42 @@
-# Production Profile Configuration
-# Activated by: SPRING_PROFILES_ACTIVE=prod
+# Production profile for Auth Service
+# Uses Supabase PostgreSQL with connection pooling
 
 spring:
+  config:
+    activate:
+      on-profile: prod
+
+  datasource:
+    # Supabase connection string with schema
+    # Format: jdbc:postgresql://[host]:[port]/postgres?options=--search_path%3Dauth
+    url: ${DATABASE_URL}
+    username: ${DB_USERNAME}
+    password: ${DB_PASSWORD}
+    driver-class-name: org.postgresql.Driver
+    hikari:
+      maximum-pool-size: 5
+      minimum-idle: 2
+      connection-timeout: 30000
+      idle-timeout: 300000
+      max-lifetime: 600000
+      # Connection pool name for monitoring
+      pool-name: auth-pool
+
   jpa:
     hibernate:
-      ddl-auto: validate
+      ddl-auto: update
     show-sql: false
     properties:
       hibernate:
-        format_sql: false
+        default_schema: auth
+        dialect: org.hibernate.dialect.PostgreSQLDialect
 
-  datasource:
-    hikari:
-      maximum-pool-size: 20
-      minimum-idle: 5
-      connection-timeout: 20000
-      leak-detection-threshold: 60000
+# Production JWT settings
+jwt:
+  secret: ${JWT_SECRET}
+  access-token-expiration: 900000
+  refresh-token-expiration: 604800000
+  issuer: dws-auth-service
 
 # Production logging
 logging:
@@ -23,29 +44,4 @@ logging:
     root: WARN
     com.fintech.authservice: INFO
     org.springframework.security: WARN
-  pattern:
-    console: '{"timestamp":"%d{ISO8601}","level":"%level","service":"auth-service","message":"%msg"}%n'
-
-# Production server settings
-server:
-  error:
-    include-message: never
-    include-stacktrace: never
-
-# Disable Swagger in production
-springdoc:
-  swagger-ui:
-    enabled: false
-  api-docs:
-    enabled: false
-
-# Management endpoints
-management:
-  endpoints:
-    web:
-      exposure:
-        include: health,info,metrics
-  endpoint:
-    health:
-      show-details: never
 

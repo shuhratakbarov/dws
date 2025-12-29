@@ -13,7 +13,10 @@ FROM eclipse-temurin:17-jre-alpine
 WORKDIR /app
 COPY --from=build /app/target/*.jar app.jar
 EXPOSE 8084
-# Limit JVM memory for low-RAM environments
-ENV JAVA_OPTS="-Xms128m -Xmx256m"
-ENTRYPOINT ["sh", "-c", "java $JAVA_OPTS -jar app.jar"]
+
+# Limit JVM memory for low-RAM environments / Heroku Eco Dynos (512MB)
+ENV JAVA_OPTS="-Xms128m -Xmx256m -XX:+UseG1GC -XX:MaxGCPauseMillis=200"
+
+# Heroku sets PORT env variable, fallback to 8084 for local
+ENTRYPOINT ["sh", "-c", "java $JAVA_OPTS -Dserver.port=${PORT:-8084} -jar app.jar"]
 

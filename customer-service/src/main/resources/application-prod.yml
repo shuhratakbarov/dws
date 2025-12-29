@@ -1,31 +1,36 @@
-# Production Profile Configuration
+# Production profile for Customer Service
+# Uses Supabase PostgreSQL with connection pooling
+
 spring:
+  config:
+    activate:
+      on-profile: prod
+
+  datasource:
+    url: ${DATABASE_URL}
+    username: ${DB_USERNAME}
+    password: ${DB_PASSWORD}
+    driver-class-name: org.postgresql.Driver
+    hikari:
+      maximum-pool-size: 5
+      minimum-idle: 2
+      connection-timeout: 30000
+      idle-timeout: 300000
+      max-lifetime: 600000
+      pool-name: customer-pool
+
   jpa:
     hibernate:
-      ddl-auto: validate
+      ddl-auto: update
     show-sql: false
+    properties:
+      hibernate:
+        default_schema: customer
+        dialect: org.hibernate.dialect.PostgreSQLDialect
 
+# Production logging
 logging:
   level:
     root: WARN
     com.fintech.customerservice: INFO
-  pattern:
-    console: '{"timestamp":"%d{ISO8601}","level":"%level","service":"customer-service","message":"%msg"}%n'
-
-server:
-  error:
-    include-message: never
-    include-stacktrace: never
-
-springdoc:
-  swagger-ui:
-    enabled: false
-  api-docs:
-    enabled: false
-
-management:
-  endpoints:
-    web:
-      exposure:
-        include: health,info,metrics
 

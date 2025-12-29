@@ -1,34 +1,32 @@
-# Development Profile Configuration
-# Activated by: SPRING_PROFILES_ACTIVE=dev
+# Development profile for Auth Service
+# Local development with local Postgres
 
 spring:
+  config:
+    activate:
+      on-profile: dev
+
+  datasource:
+    url: ${DB_URL:jdbc:postgresql://localhost:5432/auth_db}
+    username: ${DB_USERNAME:postgres}
+    password: ${DB_PASSWORD:24112004}
+
   jpa:
     hibernate:
       ddl-auto: update
     show-sql: true
-    properties:
-      hibernate:
-        format_sql: true
 
-  datasource:
-    hikari:
-      maximum-pool-size: 5
-      minimum-idle: 2
+# Development JWT settings
+jwt:
+  secret: ${JWT_SECRET:dGhpcyBpcyBhIHZlcnkgbG9uZyBzZWNyZXQga2V5IGZvciBqd3QgdG9rZW4gc2lnbmluZyB0aGF0IHNob3VsZCBiZSBhdCBsZWFzdCA1MTIgYml0cw==}
+  access-token-expiration: 900000
+  refresh-token-expiration: 604800000
+  issuer: dws-auth-service-dev
 
 # Development logging
 logging:
   level:
+    root: INFO
     com.fintech.authservice: DEBUG
     org.springframework.security: DEBUG
-    org.hibernate.SQL: DEBUG
-
-# JWT - shorter expiration for testing
-jwt:
-  access-token-expiration: 3600000      # 1 hour for dev
-  refresh-token-expiration: 86400000    # 1 day for dev
-
-# Enable Swagger UI in dev
-springdoc:
-  swagger-ui:
-    enabled: true
 

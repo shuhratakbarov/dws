@@ -1,0 +1,54 @@
+# Dyno Scheduler - Wake up and keep dynos warm during active hours
+# Helps manage the 2000 hour limit across 6 Eco dynos
+
+name: Dyno Scheduler
+
+on:
+  schedule:
+    # Wake up dynos at 09:00 UTC (adjust to your timezone)
+    - cron: '0 9 * * *'
+    # Ping every hour from 09:00-19:00 UTC to keep warm
+    - cron: '0 10-19 * * *'
+  workflow_dispatch:  # Allow manual trigger
+
+jobs:
+  wake-dynos:
+    runs-on: ubuntu-latest
+    name: Wake/Ping Dynos
+
+    steps:
+      - name: Ping API Gateway
+        run: |
+          echo "Pinging API Gateway..."
+          curl -s -o /dev/null -w "%{http_code}" https://${{ secrets.HEROKU_APP_API_GATEWAY }}.herokuapp.com/actuator/health || true
+
+      - name: Ping Auth Service
+        run: |
+          echo "Pinging Auth Service..."
+          curl -s -o /dev/null -w "%{http_code}" https://${{ secrets.HEROKU_APP_AUTH }}.herokuapp.com/actuator/health || true
+
+      - name: Ping Wallet Service
+        run: |
+          echo "Pinging Wallet Service..."
+          curl -s -o /dev/null -w "%{http_code}" https://${{ secrets.HEROKU_APP_WALLET }}.herokuapp.com/actuator/health || true
+
+      - name: Ping Customer Service
+        run: |
+          echo "Pinging Customer Service..."
+          curl -s -o /dev/null -w "%{http_code}" https://${{ secrets.HEROKU_APP_CUSTOMER }}.herokuapp.com/actuator/health || true
+
+      - name: Ping Ledger Service
+        run: |
+          echo "Pinging Ledger Service..."
+          curl -s -o /dev/null -w "%{http_code}" https://${{ secrets.HEROKU_APP_LEDGER }}.herokuapp.com/actuator/health || true
+
+      - name: Ping Notification Service
+        run: |
+          echo "Pinging Notification Service..."
+          curl -s -o /dev/null -w "%{http_code}" https://${{ secrets.HEROKU_APP_NOTIFICATION }}.herokuapp.com/actuator/health || true
+
+      - name: Summary
+        run: |
+          echo "✅ All dynos pinged successfully"
+          echo "💡 Dynos will auto-sleep after 30 minutes of inactivity (after 20:00 UTC)"
+

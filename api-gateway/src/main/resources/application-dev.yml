@@ -1,5 +1,11 @@
-# Development Profile Configuration
+# Development profile for API Gateway
+# Local development with localhost CORS
+
 spring:
+  config:
+    activate:
+      on-profile: dev
+
   cloud:
     gateway:
       globalcors:
@@ -7,23 +13,31 @@ spring:
           '[/**]':
             allowedOrigins:
               - "http://localhost:3000"
-              - "http://localhost:5173"
+              - "http://127.0.0.1:3000"
+              - "http://localhost:8080"
             allowedMethods:
               - GET
               - POST
               - PUT
               - DELETE
               - OPTIONS
+              - PATCH
             allowedHeaders: "*"
             allowCredentials: true
+            exposedHeaders:
+              - "Authorization"
+              - "X-RateLimit-Limit"
+              - "X-RateLimit-Remaining"
+            maxAge: 3600
 
+# Development JWT
+jwt:
+  secret: ${JWT_SECRET:dGhpcyBpcyBhIHZlcnkgbG9uZyBzZWNyZXQga2V5IGZvciBqd3QgdG9rZW4gc2lnbmluZyB0aGF0IHNob3VsZCBiZSBhdCBsZWFzdCA1MTIgYml0cw==}
+
+# Development logging
 logging:
   level:
-    org.springframework.cloud.gateway: DEBUG
+    root: INFO
     com.fintech.gateway: DEBUG
-
-# Rate limiting - more relaxed for development
-gateway:
-  rate-limit:
-    default-requests-per-window: 1000
+    org.springframework.cloud.gateway: DEBUG
 

@@ -1,0 +1,27 @@
+# Test profile for Auth Service
+# Used with Testcontainers for integration testing
+
+spring:
+  config:
+    activate:
+      on-profile: test
+
+  datasource:
+    driver-class-name: org.testcontainers.jdbc.ContainerDatabaseDriver
+    url: jdbc:tc:postgresql:15-alpine:///testdb
+
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+    show-sql: false
+
+jwt:
+  issuer: test-auth-service
+  refresh-token-expiration: 600000
+  access-token-expiration: 300000
+  secret: dGVzdC1zZWNyZXQta2V5LWZvci10ZXN0aW5nLW9ubHktbm90LWZvci1wcm9kdWN0aW9uLXVzZQ==
+
+logging:
+  level:
+    root: WARN
+

@@ -1,16 +1,24 @@
-# Development Profile Configuration
+# Development profile for Customer Service
+# Local development with local Postgres
+
 spring:
+  config:
+    activate:
+      on-profile: dev
+
+  datasource:
+    url: ${DB_URL:jdbc:postgresql://localhost:5432/customer_db}
+    username: ${DB_USERNAME:postgres}
+    password: ${DB_PASSWORD:24112004}
+
   jpa:
     hibernate:
       ddl-auto: update
     show-sql: true
 
+# Development logging
 logging:
   level:
+    root: INFO
     com.fintech.customerservice: DEBUG
-    org.hibernate.SQL: DEBUG
-
-springdoc:
-  swagger-ui:
-    enabled: true
 

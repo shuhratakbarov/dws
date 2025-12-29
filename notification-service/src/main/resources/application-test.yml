@@ -1,0 +1,33 @@
+# Test profile for Notification Service
+# Used with Testcontainers for integration testing
+
+spring:
+  config:
+    activate:
+      on-profile: test
+
+  datasource:
+    url: jdbc:tc:postgresql:15-alpine:///testdb
+    driver-class-name: org.testcontainers.jdbc.ContainerDatabaseDriver
+
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+    show-sql: false
+
+  mail:
+    host: localhost
+    port: 1025
+
+notification:
+  email:
+    enabled: false
+  sms:
+    enabled: false
+  push:
+    enabled: false
+
+logging:
+  level:
+    root: WARN
+

@@ -1,19 +1,48 @@
-# Development Profile Configuration
+# Development profile for Notification Service
+# Uses MailHog for local email testing
+
 spring:
+  config:
+    activate:
+      on-profile: dev
+
+  # Local Development Database
+  datasource:
+    url: ${DB_URL:jdbc:postgresql://localhost:5432/notification_db}
+    username: ${DB_USERNAME:postgres}
+    password: ${DB_PASSWORD:24112004}
+
   jpa:
     hibernate:
       ddl-auto: update
     show-sql: true
 
+  # MailHog SMTP for local testing
   mail:
-    host: localhost
-    port: 1025
+    host: ${MAIL_HOST:localhost}
+    port: ${MAIL_PORT:1025}
+    username: ""
+    password: ""
+    properties:
+      mail:
+        smtp:
+          auth: false
+          starttls:
+            enable: false
 
+# Development notification settings
+notification:
+  email:
+    enabled: true
+    from: noreply@digitalwallet.local
+  sms:
+    enabled: false
+  push:
+    enabled: false
+
+# Development logging
 logging:
   level:
+    root: INFO
     com.fintech.notificationservice: DEBUG
-
-springdoc:
-  swagger-ui:
-    enabled: true
 
