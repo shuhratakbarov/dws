@@ -32,7 +32,7 @@ spring:
 
 # Development JWT
 jwt:
-  secret: ${JWT_SECRET:dGhpcyBpcyBhIHZlcnkgbG9uZyBzZWNyZXQga2V5IGZvciBqd3QgdG9rZW4gc2lnbmluZyB0aGF0IHNob3VsZCBiZSBhdCBsZWFzdCA1MTIgYml0cw==}
+  secret: ${JWT_SECRET}
 
 # Development logging
 logging:

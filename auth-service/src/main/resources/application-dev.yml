@@ -9,7 +9,7 @@ spring:
   datasource:
     url: ${DB_URL:jdbc:postgresql://localhost:5432/auth_db}
     username: ${DB_USERNAME:postgres}
-    password: ${DB_PASSWORD:24112004}
+    password: ${DB_PASSWORD}
 
   jpa:
     hibernate:
@@ -18,7 +18,7 @@ spring:
 
 # Development JWT settings
 jwt:
-  secret: ${JWT_SECRET:dGhpcyBpcyBhIHZlcnkgbG9uZyBzZWNyZXQga2V5IGZvciBqd3QgdG9rZW4gc2lnbmluZyB0aGF0IHNob3VsZCBiZSBhdCBsZWFzdCA1MTIgYml0cw==}
+  secret: ${JWT_SECRET}
   access-token-expiration: 900000
   refresh-token-expiration: 604800000
   issuer: dws-auth-service-dev

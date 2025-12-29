@@ -24,7 +24,7 @@ server:
 jwt:
   # IMPORTANT: In production, use a strong secret stored in environment variable
   # Generate with: openssl rand -base64 64
-  secret: ${JWT_SECRET:dGhpcyBpcyBhIHZlcnkgbG9uZyBzZWNyZXQga2V5IGZvciBqd3QgdG9rZW4gc2lnbmluZyB0aGF0IHNob3VsZCBiZSBhdCBsZWFzdCA1MTIgYml0cw==}
+  secret: ${JWT_SECRET}
   access-token-expiration: 900000      # 15 minutes in milliseconds
   refresh-token-expiration: 604800000  # 7 days in milliseconds
   issuer: auth-service

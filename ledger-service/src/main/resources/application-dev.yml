@@ -9,7 +9,7 @@ spring:
   datasource:
     url: ${DB_URL:jdbc:postgresql://localhost:5432/ledger_db}
     username: ${DB_USERNAME:postgres}
-    password: ${DB_PASSWORD:24112004}
+    password: ${DB_PASSWORD}
 
   jpa:
     hibernate:

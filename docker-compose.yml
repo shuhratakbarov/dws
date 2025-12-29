@@ -5,6 +5,8 @@
 #   Development (with Mailhog): docker-compose up -d
 #   Development explicit:       docker-compose --profile dev up -d
 #   Production (no Mailhog):    docker-compose --profile prod up -d
+#
+# IMPORTANT: Create a .env file from .env.example with your credentials
 
 version: '3.9'
 
@@ -16,7 +18,7 @@ services:
     profiles: ["dev", "prod"]
     environment:
       POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: ${DB_PASSWORD:-24112004}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
     volumes:
       - postgres_data:/var/lib/postgresql/data
       - ./init-databases.sql:/docker-entrypoint-initdb.d/init.sql
@@ -45,7 +47,7 @@ services:
       - "8080:8080"
     environment:
       - SPRING_PROFILES_ACTIVE=${SPRING_PROFILES_ACTIVE:-dev}
-      - JWT_SECRET=${JWT_SECRET:-dGhpcyBpcyBhIHZlcnkgbG9uZyBzZWNyZXQga2V5IGZvciBqd3QgdG9rZW4gc2lnbmluZyB0aGF0IHNob3VsZCBiZSBhdCBsZWFzdCA1MTIgYml0cw==}
+      - JWT_SECRET=${JWT_SECRET}
       - AUTH_SERVICE_URL=http://auth-service:8081
       - WALLET_SERVICE_URL=http://wallet-service:8082
       - CUSTOMER_SERVICE_URL=http://customer-service:8083
@@ -78,8 +80,8 @@ services:
       - SPRING_PROFILES_ACTIVE=${SPRING_PROFILES_ACTIVE:-dev}
       - DB_URL=jdbc:postgresql://postgres:5432/auth_db
       - DB_USERNAME=postgres
-      - DB_PASSWORD=${DB_PASSWORD:-24112004}
-      - JWT_SECRET=${JWT_SECRET:-dGhpcyBpcyBhIHZlcnkgbG9uZyBzZWNyZXQga2V5IGZvciBqd3QgdG9rZW4gc2lnbmluZyB0aGF0IHNob3VsZCBiZSBhdCBsZWFzdCA1MTIgYml0cw==}
+      - DB_PASSWORD=${DB_PASSWORD}
+      - JWT_SECRET=${JWT_SECRET}
     depends_on:
       postgres:
         condition: service_healthy
@@ -103,7 +105,7 @@ services:
       - SPRING_PROFILES_ACTIVE=${SPRING_PROFILES_ACTIVE:-dev}
       - DB_URL=jdbc:postgresql://postgres:5432/wallet_db
       - DB_USERNAME=postgres
-      - DB_PASSWORD=${DB_PASSWORD:-24112004}
+      - DB_PASSWORD=${DB_PASSWORD}
       - LEDGER_SERVICE_URL=http://ledger-service:8084
       - NOTIFICATION_SERVICE_URL=http://notification-service:8085
     depends_on:
@@ -133,7 +135,7 @@ services:
       - SPRING_PROFILES_ACTIVE=${SPRING_PROFILES_ACTIVE:-dev}
       - DB_URL=jdbc:postgresql://postgres:5432/customer_db
       - DB_USERNAME=postgres
-      - DB_PASSWORD=${DB_PASSWORD:-24112004}
+      - DB_PASSWORD=${DB_PASSWORD}
     depends_on:
       postgres:
         condition: service_healthy
@@ -157,7 +159,7 @@ services:
       - SPRING_PROFILES_ACTIVE=${SPRING_PROFILES_ACTIVE:-dev}
       - DB_URL=jdbc:postgresql://postgres:5432/ledger_db
       - DB_USERNAME=postgres
-      - DB_PASSWORD=${DB_PASSWORD:-24112004}
+      - DB_PASSWORD=${DB_PASSWORD}
     depends_on:
       postgres:
         condition: service_healthy
@@ -181,7 +183,7 @@ services:
       - SPRING_PROFILES_ACTIVE=${SPRING_PROFILES_ACTIVE:-dev}
       - DB_URL=jdbc:postgresql://postgres:5432/notification_db
       - DB_USERNAME=postgres
-      - DB_PASSWORD=${DB_PASSWORD:-24112004}
+      - DB_PASSWORD=${DB_PASSWORD}
       - EMAIL_ENABLED=true
       - SMS_ENABLED=false
       - PUSH_ENABLED=false
@@ -243,4 +245,3 @@ networks:
 
 volumes:
   postgres_data:
-
