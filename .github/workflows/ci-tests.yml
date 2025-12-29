@@ -50,7 +50,9 @@ jobs:
 
       - name: Run tests for ${{ matrix.service }}
         working-directory: ${{ matrix.service }}
-        run: ./mvnw test -B
+        run: |
+          chmod +x mvnw
+          ./mvnw test -B
         env:
           DB_URL: jdbc:postgresql://localhost:5432/testdb
           DB_USERNAME: postgres
