@@ -19,14 +19,14 @@ This guide covers deploying the Digital Wallet System to production using Heroku
 │    └─────────────────────────────────────────────────────────────────────┘  │
 │         │           │           │           │           │                   │
 │         ▼           ▼           ▼           ▼           ▼                   │
-│    ┌────────┐  ┌────────┐  ┌────────┐  ┌────────┐  ┌─────────────┐         │
-│    │  Auth  │  │ Wallet │  │Customer│  │ Ledger │  │Notification │         │
-│    └────────┘  └────────┘  └────────┘  └────────┘  └─────────────┘         │
+│    ┌────────┐  ┌────────┐  ┌────────┐  ┌────────┐  ┌─────────────┐          │
+│    │  Auth  │  │ Wallet │  │Customer│  │ Ledger │  │Notification │          │
+│    └────────┘  └────────┘  └────────┘  └────────┘  └─────────────┘          │
 │                              │                                              │
 │                              ▼                                              │
 │    ┌─────────────────────────────────────────────────────────────────────┐  │
 │    │                 Supabase PostgreSQL                                 │  │
-│    │     Schemas: auth | wallet | customer | ledger | notification       │  │
+│    │  Schemas: auth_service | wallet | customer | ledger | notification  │  │
 │    └─────────────────────────────────────────────────────────────────────┘  │
 │                                                                             │
 └─────────────────────────────────────────────────────────────────────────────┘
@@ -48,7 +48,7 @@ This guide covers deploying the Digital Wallet System to production using Heroku
 Connect to your Supabase database and create schemas for each service:
 
 ```sql
-CREATE SCHEMA IF NOT EXISTS auth;
+CREATE SCHEMA IF NOT EXISTS auth_service;
 CREATE SCHEMA IF NOT EXISTS wallet;
 CREATE SCHEMA IF NOT EXISTS customer;
 CREATE SCHEMA IF NOT EXISTS ledger;
@@ -66,7 +66,7 @@ Supabase provides two connection options:
 
 **Pooled connection string format:**
 ```
-jdbc:postgresql://db.[PROJECT_REF].supabase.co:6543/postgres?pgbouncer=true
+jdbc:postgresql://aws-0-xxx.pooler.supabase.com:6543/postgres?pgbouncer=true
 ```
 
 ---
