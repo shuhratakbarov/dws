@@ -25,7 +25,7 @@ spring:
     show-sql: false
     properties:
       hibernate:
-        default_schema: customer
+        default_schema: ${DB_SCHEMA}
         dialect: org.hibernate.dialect.PostgreSQLDialect
 
 # Production logging

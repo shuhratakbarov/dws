@@ -28,7 +28,7 @@ spring:
     show-sql: false
     properties:
       hibernate:
-        default_schema: auth
+        default_schema: ${DB_SCHEMA}
         dialect: org.hibernate.dialect.PostgreSQLDialect
 
 # Production JWT settings
