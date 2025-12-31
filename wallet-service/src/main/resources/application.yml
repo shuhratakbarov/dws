@@ -40,7 +40,7 @@ spring:
       mode: never  # Use Flyway/Liquibase for production
 
 server:
-  port: 8082
+  port: ${PORT:8082}
   error:
     include-message: always
     include-binding-errors: always
