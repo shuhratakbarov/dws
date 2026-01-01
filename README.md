@@ -9,7 +9,7 @@
 </p>
 
 <p align="center">
-  <a href="#"><img src="https://img.shields.io/badge/Java-21-orange?style=flat-square&logo=openjdk" alt="Java 21"></a>
+  <a href="#"><img src="https://img.shields.io/badge/Java-17-orange?style=flat-square&logo=openjdk" alt="Java 21"></a>
   <a href="#"><img src="https://img.shields.io/badge/Spring%20Boot-3.4-brightgreen?style=flat-square&logo=springboot" alt="Spring Boot"></a>
   <a href="#"><img src="https://img.shields.io/badge/React-18-blue?style=flat-square&logo=react" alt="React 18"></a>
   <a href="#"><img src="https://img.shields.io/badge/PostgreSQL-15-blue?style=flat-square&logo=postgresql" alt="PostgreSQL"></a>
@@ -156,6 +156,8 @@ npm run dev
 # Open http://localhost:3000
 ```
 
+## Features
+
 ## Frontend Features
 
 | Page | Features |
@@ -244,13 +246,6 @@ curl -X POST http://localhost:8080/api/v1/wallets/{walletId}/deposit \
 ```
 DWS/
 ├── frontend/               # React + Ant Design + TypeScript
-│   ├── src/
-│   │   ├── components/     # Reusable UI components
-│   │   ├── contexts/       # React contexts (Auth)
-│   │   ├── pages/          # Page components
-│   │   ├── services/       # API service layer
-│   │   └── types/          # TypeScript types
-│   └── Dockerfile
 ├── api-gateway/            # Spring Cloud Gateway
 ├── auth-service/           # Authentication & JWT
 ├── wallet-service/         # Wallet operations
@@ -265,7 +260,7 @@ DWS/
 ## Technology Stack
 
 ### Backend
-- **Java 21** - Programming language
+- **Java 17** - Programming language
 - **Spring Boot 3.4** - Application framework
 - **Spring Cloud Gateway** - API Gateway
 - **Spring Security** - Authentication
