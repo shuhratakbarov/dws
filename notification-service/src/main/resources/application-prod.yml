@@ -1,6 +1,3 @@
-# Production profile for Notification Service
-# Uses Supabase PostgreSQL with connection pooling
-
 spring:
   config:
     activate:
@@ -28,7 +25,6 @@ spring:
         default_schema: ${DB_SCHEMA}
         dialect: org.hibernate.dialect.PostgreSQLDialect
 
-  # Production SMTP configuration
   mail:
     host: ${MAIL_HOST:smtp.gmail.com}
     port: ${MAIL_PORT:587}
@@ -41,7 +37,6 @@ spring:
           starttls:
             enable: true
 
-# Production notification settings
 notification:
   email:
     enabled: true
@@ -51,7 +46,6 @@ notification:
   push:
     enabled: false
 
-# Production logging
 logging:
   level:
     root: WARN

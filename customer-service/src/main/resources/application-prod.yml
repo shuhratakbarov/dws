@@ -1,6 +1,3 @@
-# Production profile for Customer Service
-# Uses Supabase PostgreSQL with connection pooling
-
 spring:
   config:
     activate:
@@ -28,7 +25,6 @@ spring:
         default_schema: ${DB_SCHEMA}
         dialect: org.hibernate.dialect.PostgreSQLDialect
 
-# Production logging
 logging:
   level:
     root: WARN

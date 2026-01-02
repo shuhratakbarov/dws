@@ -1,14 +1,9 @@
-# Production profile for Auth Service
-# Uses Supabase PostgreSQL with connection pooling
-
 spring:
   config:
     activate:
       on-profile: prod
 
   datasource:
-    # Supabase connection string with schema
-    # Format: jdbc:postgresql://[host]:[port]/postgres?options=--search_path%3Dauth
     url: ${DATABASE_URL}
     username: ${DB_USERNAME}
     password: ${DB_PASSWORD}
@@ -19,7 +14,6 @@ spring:
       connection-timeout: 30000
       idle-timeout: 300000
       max-lifetime: 600000
-      # Connection pool name for monitoring
       pool-name: auth-pool
 
   jpa:
@@ -31,14 +25,12 @@ spring:
         default_schema: ${DB_SCHEMA}
         dialect: org.hibernate.dialect.PostgreSQLDialect
 
-# Production JWT settings
 jwt:
   secret: ${JWT_SECRET}
   access-token-expiration: 900000
   refresh-token-expiration: 604800000
   issuer: dws-auth-service
 
-# Production logging
 logging:
   level:
     root: WARN

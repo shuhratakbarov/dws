@@ -20,7 +20,6 @@ spring:
         dialect: org.hibernate.dialect.PostgreSQLDialect
         format_sql: true
 
-# Logging
 logging:
   level:
     root: INFO
@@ -28,7 +27,6 @@ logging:
   pattern:
     console: "%d{yyyy-MM-dd HH:mm:ss} - %logger{36} - %msg%n"
 
-# OpenAPI
 springdoc:
   api-docs:
     path: /v3/api-docs

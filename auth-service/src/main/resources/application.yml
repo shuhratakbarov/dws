@@ -20,16 +20,12 @@ spring:
 server:
   port: ${PORT:8081}
 
-# JWT Configuration
 jwt:
-  # IMPORTANT: In production, use a strong secret stored in environment variable
-  # Generate with: openssl rand -base64 64
   secret: ${JWT_SECRET}
-  access-token-expiration: 900000      # 15 minutes in milliseconds
-  refresh-token-expiration: 604800000  # 7 days in milliseconds
+  access-token-expiration: 900000      # 15 minutes
+  refresh-token-expiration: 604800000  # 7 days
   issuer: auth-service
 
-# Logging
 logging:
   level:
     root: INFO
@@ -38,7 +34,6 @@ logging:
   pattern:
     console: "%d{yyyy-MM-dd HH:mm:ss} - %logger{36} - %msg%n"
 
-# OpenAPI
 springdoc:
   api-docs:
     path: /v3/api-docs

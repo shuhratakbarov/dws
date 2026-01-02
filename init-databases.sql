@@ -1,6 +1,3 @@
--- Initialize databases for Digital Wallet System (Local Development)
--- This script runs when PostgreSQL container starts
-
 CREATE DATABASE auth_db;
 CREATE DATABASE wallet_db;
 CREATE DATABASE customer_db;

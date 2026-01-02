@@ -19,8 +19,6 @@ spring:
       hibernate:
         dialect: org.hibernate.dialect.PostgreSQLDialect
 
-  # Email Configuration
-  # Dev: MailHog (no auth) | Prod: Testmail.app (with auth)
   mail:
     host: ${MAIL_HOST:localhost}
     port: ${MAIL_PORT:1025}
@@ -33,14 +31,12 @@ spring:
           starttls:
             enable: ${MAIL_STARTTLS:false}
 
-  # Thymeleaf for email templates
   thymeleaf:
     prefix: classpath:/templates/
     suffix: .html
     mode: HTML
     cache: false
 
-# Notification Channel Configuration
 notification:
   email:
     enabled: ${EMAIL_ENABLED:true}
@@ -57,14 +53,12 @@ notification:
     # fcm:
     #   credentials: ${FCM_CREDENTIALS_PATH}
 
-# Async configuration
 spring.task.execution:
   pool:
     core-size: 5
     max-size: 10
     queue-capacity: 100
 
-# Logging
 logging:
   level:
     root: INFO
@@ -72,7 +66,6 @@ logging:
   pattern:
     console: "%d{yyyy-MM-dd HH:mm:ss} - %logger{36} - %msg%n"
 
-# OpenAPI
 springdoc:
   api-docs:
     path: /v3/api-docs

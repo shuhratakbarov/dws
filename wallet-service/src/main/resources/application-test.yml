@@ -1,6 +1,3 @@
-# Test profile for Wallet Service
-# Used with Testcontainers for integration testing
-
 spring:
   config:
     activate:

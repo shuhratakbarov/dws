@@ -29,7 +29,6 @@ spring:
         dialect: org.hibernate.dialect.PostgreSQLDialect
         jdbc:
           time_zone: UTC
-        # Enable batch inserts
         jdbc.batch_size: 20
         order_inserts: true
         order_updates: true
@@ -45,7 +44,6 @@ server:
     include-message: always
     include-binding-errors: always
 
-# External Services Configuration
 services:
   ledger:
     url: ${LEDGER_SERVICE_URL:http://localhost:8084}
@@ -54,7 +52,6 @@ services:
     url: ${NOTIFICATION_SERVICE_URL:http://localhost:8085}
     enabled: ${NOTIFICATION_SERVICE_ENABLED:true}
 
-# Wallet Configuration
 wallet:
   large-transaction-threshold: ${LARGE_TX_THRESHOLD:100000}  # $1000.00 in cents
 

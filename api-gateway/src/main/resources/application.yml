@@ -7,7 +7,6 @@ spring:
 
   cloud:
     gateway:
-      # Global CORS configuration
       globalcors:
         add-to-simple-url-handler-mapping: true
         cors-configurations:
@@ -31,7 +30,6 @@ spring:
               - "X-RateLimit-Remaining"
             maxAge: 3600
 
-      # Route definitions
       routes:
         # ==================== AUTH SERVICE ====================
         - id: auth-service
@@ -109,11 +107,9 @@ spring:
       default-filters:
         - DedupeResponseHeader=Access-Control-Allow-Origin Access-Control-Allow-Credentials, RETAIN_UNIQUE
 
-# JWT Configuration (must match Auth Service)
 jwt:
   secret: ${JWT_SECRET}
 
-# Actuator endpoints
 management:
   endpoints:
     web:
@@ -123,7 +119,6 @@ management:
     gateway:
       enabled: true
 
-# Logging
 logging:
   level:
     root: INFO

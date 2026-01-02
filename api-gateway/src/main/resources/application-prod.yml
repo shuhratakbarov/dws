@@ -1,6 +1,3 @@
-# Production profile for API Gateway
-# CORS configured for production frontend
-
 spring:
   config:
     activate:
@@ -29,11 +26,9 @@ spring:
               - "X-RateLimit-Remaining"
             maxAge: 3600
 
-# JWT must match auth-service
 jwt:
   secret: ${JWT_SECRET}
 
-# Production logging
 logging:
   level:
     root: WARN

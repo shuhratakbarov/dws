@@ -1,12 +1,8 @@
-# Development profile for Notification Service
-# Uses MailHog for local email testing
-
 spring:
   config:
     activate:
       on-profile: dev
 
-  # Local Development Database
   datasource:
     url: ${DB_URL:jdbc:postgresql://localhost:5432/notification_db}
     username: ${DB_USERNAME:postgres}
@@ -17,7 +13,6 @@ spring:
       ddl-auto: update
     show-sql: true
 
-  # MailHog SMTP for local testing
   mail:
     host: ${MAIL_HOST:localhost}
     port: ${MAIL_PORT:1025}
@@ -30,7 +25,6 @@ spring:
           starttls:
             enable: false
 
-# Development notification settings
 notification:
   email:
     enabled: true
@@ -40,7 +34,6 @@ notification:
   push:
     enabled: false
 
-# Development logging
 logging:
   level:
     root: INFO
