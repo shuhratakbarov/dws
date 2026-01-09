@@ -1,15 +1,21 @@
 # Dyno Scheduler - Wake up and keep dynos warm during active hours
 # Helps manage the 2000 hour limit across 6 Eco dynos
+# Schedule: 10:00 AM - 08:00 PM Uzbekistan time (UTC+5) = 05:00 - 15:00 UTC
+# 6 dynos × 10 hours/day × 30 days = 1,800 hours/month (under 2,000 limit)
+#
+# ⚠️ DISABLED FOR JANUARY 2026 - Re-enable in February
+# Uncomment the schedule section below when ready to resume
 
 name: Dyno Scheduler
 
 on:
-  schedule:
-    # Wake up dynos at 09:00 UTC (adjust to your timezone)
-    - cron: '0 9 * * *'
-    # Ping every hour from 09:00-19:00 UTC to keep warm
-    - cron: '0 10-19 * * *'
-  workflow_dispatch:  # Allow manual trigger
+  # DISABLED - Uncomment below to enable automatic scheduling
+  # schedule:
+  #   # Wake up dynos at 05:00 UTC (10:00 AM Uzbekistan time)
+  #   - cron: '0 5 * * *'
+  #   # Ping every hour from 06:00-15:00 UTC (11:00 AM - 08:00 PM Uzbekistan time)
+  #   - cron: '0 6-15 * * *'
+  workflow_dispatch:  # Manual trigger only for now
 
 jobs:
   wake-dynos:
@@ -50,5 +56,5 @@ jobs:
       - name: Summary
         run: |
           echo "✅ All dynos pinged successfully"
-          echo "💡 Dynos will auto-sleep after 30 minutes of inactivity (after 20:00 UTC)"
+          echo "💡 Dynos will auto-sleep after 30 minutes of inactivity (after 08:00 PM Uzbekistan time / 15:00 UTC)"
 

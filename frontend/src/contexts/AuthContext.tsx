@@ -25,7 +25,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       try {
         const payload = JSON.parse(atob(token.split('.')[1]));
         setUser({
-          id: payload.sub,
+          id: payload.userId,
           email: payload.email || payload.sub,
           firstName: payload.firstName || '',
           lastName: payload.lastName || '',
@@ -44,7 +44,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // Decode token to get user info
     const payload = JSON.parse(atob(response.accessToken.split('.')[1]));
     setUser({
-      id: payload.sub,
+      id: payload.userId,
       email: payload.email || payload.sub,
       firstName: payload.firstName || '',
       lastName: payload.lastName || '',
@@ -57,7 +57,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     const payload = JSON.parse(atob(response.accessToken.split('.')[1]));
     setUser({
-      id: payload.sub,
+      id: payload.userId,
       email: payload.email || payload.sub,
       firstName,
       lastName,
