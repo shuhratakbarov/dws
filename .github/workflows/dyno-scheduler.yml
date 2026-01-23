@@ -1,60 +1,79 @@
-# Dyno Scheduler - Wake up and keep dynos warm during active hours
-# Helps manage the 2000 hour limit across 6 Eco dynos
+# Dyno Scheduler - Scale dynos up/down to save Eco hours
 # Schedule: 10:00 AM - 08:00 PM Uzbekistan time (UTC+5) = 05:00 - 15:00 UTC
+# Scale UP at 05:00 UTC, Scale DOWN at 15:00 UTC
 # 6 dynos × 10 hours/day × 30 days = 1,800 hours/month (under 2,000 limit)
-#
-# ⚠️ DISABLED FOR JANUARY 2026 - Re-enable in February
-# Uncomment the schedule section below when ready to resume
 
 name: Dyno Scheduler
 
 on:
-  # DISABLED - Uncomment below to enable automatic scheduling
-  # schedule:
-  #   # Wake up dynos at 05:00 UTC (10:00 AM Uzbekistan time)
-  #   - cron: '0 5 * * *'
-  #   # Ping every hour from 06:00-15:00 UTC (11:00 AM - 08:00 PM Uzbekistan time)
-  #   - cron: '0 6-15 * * *'
-  workflow_dispatch:  # Manual trigger only for now
+  schedule:
+    - cron: '0 5 * * *'   # Scale UP at 05:00 UTC (10:00 AM Uzbekistan)
+    - cron: '0 15 * * *'  # Scale DOWN at 15:00 UTC (08:00 PM Uzbekistan)
+  workflow_dispatch:  # Manual trigger
+
+env:
+  HEROKU_API_KEY: ${{ secrets.HEROKU_API_KEY }}
 
 jobs:
-  wake-dynos:
+  scale-dynos:
     runs-on: ubuntu-latest
-    name: Wake/Ping Dynos
+    name: Scale Dynos
 
     steps:
-      - name: Ping API Gateway
-        run: |
-          echo "Pinging API Gateway..."
-          curl -s -o /dev/null -w "%{http_code}" https://${{ secrets.HEROKU_APP_API_GATEWAY }}.herokuapp.com/actuator/health || true
+      - name: Install Heroku CLI
+        run: curl https://cli-assets.heroku.com/install.sh | sh
 
-      - name: Ping Auth Service
+      - name: Determine Action
+        id: action
         run: |
-          echo "Pinging Auth Service..."
-          curl -s -o /dev/null -w "%{http_code}" https://${{ secrets.HEROKU_APP_AUTH }}.herokuapp.com/actuator/health || true
+          HOUR=$(date -u +%H)
+          if [ "$HOUR" -eq "5" ]; then
+            echo "scale=1" >> $GITHUB_OUTPUT
+            echo "action=UP" >> $GITHUB_OUTPUT
+          elif [ "$HOUR" -eq "15" ]; then
+            echo "scale=0" >> $GITHUB_OUTPUT
+            echo "action=DOWN" >> $GITHUB_OUTPUT
+          else
+            echo "scale=1" >> $GITHUB_OUTPUT
+            echo "action=UP" >> $GITHUB_OUTPUT
+          fi
 
-      - name: Ping Wallet Service
+      - name: Scale API Gateway
         run: |
-          echo "Pinging Wallet Service..."
-          curl -s -o /dev/null -w "%{http_code}" https://${{ secrets.HEROKU_APP_WALLET }}.herokuapp.com/actuator/health || true
+          echo "Scaling API Gateway to ${{ steps.action.outputs.scale }}..."
+          heroku ps:scale web=${{ steps.action.outputs.scale }} -a ${{ secrets.HEROKU_APP_API_GATEWAY }}
 
-      - name: Ping Customer Service
+      - name: Scale Auth Service
         run: |
-          echo "Pinging Customer Service..."
-          curl -s -o /dev/null -w "%{http_code}" https://${{ secrets.HEROKU_APP_CUSTOMER }}.herokuapp.com/actuator/health || true
+          echo "Scaling Auth Service to ${{ steps.action.outputs.scale }}..."
+          heroku ps:scale web=${{ steps.action.outputs.scale }} -a ${{ secrets.HEROKU_APP_AUTH }}
 
-      - name: Ping Ledger Service
+      - name: Scale Wallet Service
         run: |
-          echo "Pinging Ledger Service..."
-          curl -s -o /dev/null -w "%{http_code}" https://${{ secrets.HEROKU_APP_LEDGER }}.herokuapp.com/actuator/health || true
+          echo "Scaling Wallet Service to ${{ steps.action.outputs.scale }}..."
+          heroku ps:scale web=${{ steps.action.outputs.scale }} -a ${{ secrets.HEROKU_APP_WALLET }}
 
-      - name: Ping Notification Service
+      - name: Scale Customer Service
         run: |
-          echo "Pinging Notification Service..."
-          curl -s -o /dev/null -w "%{http_code}" https://${{ secrets.HEROKU_APP_NOTIFICATION }}.herokuapp.com/actuator/health || true
+          echo "Scaling Customer Service to ${{ steps.action.outputs.scale }}..."
+          heroku ps:scale web=${{ steps.action.outputs.scale }} -a ${{ secrets.HEROKU_APP_CUSTOMER }}
+
+      - name: Scale Ledger Service
+        run: |
+          echo "Scaling Ledger Service to ${{ steps.action.outputs.scale }}..."
+          heroku ps:scale web=${{ steps.action.outputs.scale }} -a ${{ secrets.HEROKU_APP_LEDGER }}
+
+      - name: Scale Notification Service
+        run: |
+          echo "Scaling Notification Service to ${{ steps.action.outputs.scale }}..."
+          heroku ps:scale web=${{ steps.action.outputs.scale }} -a ${{ secrets.HEROKU_APP_NOTIFICATION }}
 
       - name: Summary
         run: |
-          echo "✅ All dynos pinged successfully"
-          echo "💡 Dynos will auto-sleep after 30 minutes of inactivity (after 08:00 PM Uzbekistan time / 15:00 UTC)"
+          echo "✅ All dynos scaled ${{ steps.action.outputs.action }} to ${{ steps.action.outputs.scale }}"
+          if [ "${{ steps.action.outputs.action }}" == "UP" ]; then
+            echo "💡 Dynos are now ACTIVE (10:00 AM - 08:00 PM Uzbekistan time)"
+          else
+            echo "💤 Dynos are now SLEEPING to save hours (08:00 PM - 10:00 AM Uzbekistan time)"
+          fi
 
