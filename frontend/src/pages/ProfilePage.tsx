@@ -139,12 +139,12 @@ export default function ProfilePage() {
   }
 
   return (
-    <div style={{ padding: 24, maxWidth: 800, margin: '0 auto' }}>
-      <Title level={2}>
+    <div style={{ padding: 'clamp(16px, 4vw, 24px)', maxWidth: 800, margin: '0 auto' }}>
+      <Title level={2} style={{ fontSize: 'clamp(20px, 4vw, 28px)' }}>
         <UserOutlined /> My Profile
       </Title>
 
-      <Row gutter={[24, 24]}>
+      <Row gutter={[16, 16]}>
         {/* Profile Summary Card */}
         <Col span={24}>
           <Card>

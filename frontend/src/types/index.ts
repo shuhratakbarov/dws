@@ -87,11 +87,37 @@ export const CURRENCIES: Record<string, { symbol: string; name: string; decimals
   JPY: { symbol: '¥', name: 'Japanese Yen', decimals: 0 },
 };
 
+// Tax rates for different providers (slightly higher than actual provider rates)
+export const TAX_RATES: Record<string, { rate: number; name: string }> = {
+  VISA: { rate: 0.025, name: 'Visa' },           // 2.5%
+  MASTERCARD: { rate: 0.025, name: 'Mastercard' }, // 2.5%
+  UZCARD: { rate: 0.015, name: 'UzCard' },       // 1.5%
+  HUMO: { rate: 0.015, name: 'Humo' },           // 1.5%
+};
+
 export function formatCurrency(minorUnits: number | undefined | null, currency: string): string {
   const config = CURRENCIES[currency] || { symbol: currency || '$', decimals: 2 };
   const safeMinorUnits = minorUnits ?? 0;
   const amount = safeMinorUnits / Math.pow(10, config.decimals);
-  return `${config.symbol}${amount.toFixed(config.decimals)}`;
+
+  // Format with thousand separators (space)
+  const formatted = amount.toFixed(config.decimals).replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
+  return `${config.symbol}${formatted}`;
+}
+
+export function formatNumber(value: number): string {
+  // Format number with thousand separators (space)
+  return value.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
+}
+
+export function calculateTax(amount: number, cardType: string): { tax: number; total: number; rate: number } {
+  const taxInfo = TAX_RATES[cardType] || { rate: 0.02, name: 'Standard' };
+  const tax = Math.ceil(amount * taxInfo.rate);
+  return {
+    tax,
+    total: amount + tax,
+    rate: taxInfo.rate * 100,
+  };
 }
 
 export function generateIdempotencyKey(): string {

@@ -115,5 +115,15 @@ export const notificationService = {
     });
     return response.data;
   },
+
+  // Mark notification as read
+  async markAsRead(notificationId: string): Promise<void> {
+    await api.put(`/notifications/${notificationId}/read`);
+  },
+
+  // Mark all notifications as read
+  async markAllAsRead(): Promise<void> {
+    await api.put('/notifications/read-all');
+  },
 };
 

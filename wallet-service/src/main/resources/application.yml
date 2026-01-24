@@ -55,6 +55,26 @@ services:
 wallet:
   large-transaction-threshold: ${LARGE_TX_THRESHOLD:100000}  # $1000.00 in cents
 
+# Payment Provider Configuration
+payment:
+  providers:
+    payme:
+      merchant-id: ${PAYME_MERCHANT_ID:mock}
+      secret-key: ${PAYME_SECRET_KEY:mock}
+      api-url: ${PAYME_API_URL:https://checkout.paycom.uz/api}
+      webhook-secret: ${PAYME_WEBHOOK_SECRET:mock}
+    click:
+      merchant-id: ${CLICK_MERCHANT_ID:mock}
+      service-id: ${CLICK_SERVICE_ID:mock}
+      merchant-user-id: ${CLICK_MERCHANT_USER_ID:mock}
+      secret-key: ${CLICK_SECRET_KEY:mock}
+      api-url: ${CLICK_API_URL:https://api.click.uz/v2}
+    stripe:
+      secret-key: ${STRIPE_SECRET_KEY:mock}
+      publishable-key: ${STRIPE_PUBLISHABLE_KEY:mock}
+      webhook-secret: ${STRIPE_WEBHOOK_SECRET:mock}
+      api-url: ${STRIPE_API_URL:https://api.stripe.com/v1}
+
 logging:
   level:
     com.fintech.wallet: DEBUG

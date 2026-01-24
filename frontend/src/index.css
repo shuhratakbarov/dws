@@ -102,16 +102,32 @@ body {
 }
 
 .ant-table-thead > tr > th {
-  background: var(--bg-primary) !important;
+  background: #f8fafc !important;
   font-weight: 600 !important;
   color: var(--text-secondary) !important;
   text-transform: uppercase !important;
-  font-size: 12px !important;
+  font-size: 11px !important;
   letter-spacing: 0.5px !important;
+  padding: 12px 16px !important;
+  border-bottom: 2px solid #e2e8f0 !important;
+}
+
+.ant-table-tbody > tr > td {
+  padding: 14px 16px !important;
+  border-bottom: 1px solid #f1f5f9 !important;
+  font-size: 13px !important;
 }
 
 .ant-table-tbody > tr:hover > td {
-  background: rgba(79, 70, 229, 0.03) !important;
+  background: #f0f9ff !important;
+}
+
+.ant-table-tbody > tr:nth-child(even) > td {
+  background: #fafbfc;
+}
+
+.ant-table-tbody > tr:nth-child(even):hover > td {
+  background: #f0f9ff !important;
 }
 
 .ant-tag {
@@ -304,3 +320,379 @@ body {
   border-radius: var(--radius-md) !important;
   box-shadow: var(--shadow-lg) !important;
 }
+
+/* =====================================================
+   RESPONSIVE STYLES
+   ===================================================== */
+
+/* Mobile First Approach */
+
+/* Small devices (phones, 576px and down) */
+@media (max-width: 576px) {
+  /* Page header */
+  .page-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 16px;
+  }
+
+  .page-header h2 {
+    font-size: 20px !important;
+  }
+
+  /* Wallet cards */
+  .wallet-card-container {
+    padding: 12px;
+  }
+
+  /* Stats row */
+  .stats-row .ant-card {
+    margin-bottom: 12px;
+  }
+
+  .stats-row .ant-statistic-content-value {
+    font-size: 20px !important;
+  }
+
+  /* Action buttons */
+  .action-buttons {
+    flex-direction: column;
+    width: 100%;
+  }
+
+  .action-buttons .ant-btn {
+    width: 100%;
+  }
+
+  /* Modal improvements */
+  .ant-modal {
+    max-width: calc(100vw - 16px) !important;
+    margin: 8px !important;
+    top: 8px !important;
+  }
+
+  .ant-modal-content {
+    padding: 12px !important;
+    max-height: calc(100vh - 16px);
+    overflow-y: auto;
+  }
+
+  .ant-modal-header {
+    padding: 12px 16px !important;
+  }
+
+  .ant-modal-body {
+    padding: 12px !important;
+  }
+
+  /* Table improvements */
+  .ant-table-wrapper {
+    width: 100%;
+  }
+
+  .ant-table-content {
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .ant-table-cell {
+    white-space: nowrap;
+  }
+
+  .ant-table-pagination {
+    justify-content: center !important;
+    flex-wrap: wrap !important;
+  }
+
+  /* Drawer */
+  .ant-drawer-content-wrapper {
+    max-width: 85vw !important;
+  }
+
+  /* Radio buttons for payment method */
+  .ant-radio-button-wrapper {
+    padding: 8px 12px !important;
+  }
+
+  /* Table */
+  .ant-table-wrapper {
+    overflow-x: auto;
+  }
+
+  .ant-table {
+    min-width: 600px;
+  }
+
+  /* Modal */
+  .ant-modal {
+    max-width: calc(100vw - 32px) !important;
+    margin: 16px !important;
+  }
+
+  .ant-modal-content {
+    padding: 16px !important;
+  }
+
+  /* Form */
+  .ant-form-item-label > label {
+    font-size: 13px !important;
+  }
+
+  /* Cards */
+  .ant-card {
+    margin-bottom: 12px;
+  }
+
+  .ant-card-body {
+    padding: 16px !important;
+  }
+
+  /* Buttons in header */
+  .ant-space-compact,
+  .header-actions {
+    width: 100%;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  /* Sidebar adjustments handled by Ant Design breakpoint */
+}
+
+/* Medium devices (tablets, 768px and up) */
+@media (min-width: 577px) and (max-width: 991px) {
+  .page-header {
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+
+  .stats-row .ant-col {
+    margin-bottom: 12px;
+  }
+
+  /* Wallet cards */
+  .wallet-card-container .ant-col {
+    margin-bottom: 16px;
+  }
+}
+
+/* Large devices (desktops, 992px and up) */
+@media (min-width: 992px) {
+  .page-header h2 {
+    font-size: 28px !important;
+  }
+
+  .stats-row .ant-statistic-content-value {
+    font-size: 28px !important;
+  }
+}
+
+/* Touch device optimizations */
+@media (hover: none) and (pointer: coarse) {
+  .ant-btn {
+    min-height: 44px;
+    min-width: 44px;
+  }
+
+  .ant-input,
+  .ant-input-number,
+  .ant-select-selector {
+    min-height: 44px !important;
+  }
+
+  .ant-menu-item {
+    min-height: 44px;
+    line-height: 44px;
+  }
+}
+
+/* Reduced motion for accessibility */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* Dark mode support */
+@media (prefers-color-scheme: dark) {
+  /* Add dark mode styles here if needed */
+}
+
+/* Print styles */
+@media print {
+  .ant-layout-sider,
+  .ant-layout-header,
+  .ant-btn,
+  .page-header .ant-space {
+    display: none !important;
+  }
+
+  .ant-layout-content {
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  .ant-card {
+    box-shadow: none !important;
+    border: 1px solid #ddd !important;
+  }
+}
+
+/* =====================================================
+   PAYMENT UI STYLES
+   ===================================================== */
+
+/* Payment method cards */
+.payment-method-card {
+  border: 2px solid var(--border-color);
+  border-radius: var(--radius-lg);
+  padding: 16px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.payment-method-card:hover {
+  border-color: var(--primary-color);
+  box-shadow: var(--shadow-md);
+}
+
+.payment-method-card.selected {
+  border-color: var(--primary-color);
+  background: rgba(79, 70, 229, 0.05);
+}
+
+.payment-method-card .provider-logo {
+  height: 32px;
+  object-fit: contain;
+}
+
+/* Payment provider badges */
+.provider-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.provider-badge.payme {
+  background: linear-gradient(135deg, #00D4AA 0%, #00A88A 100%);
+  color: white;
+}
+
+.provider-badge.click {
+  background: linear-gradient(135deg, #0066FF 0%, #0052CC 100%);
+  color: white;
+}
+
+.provider-badge.stripe {
+  background: linear-gradient(135deg, #635BFF 0%, #5046E4 100%);
+  color: white;
+}
+
+/* Transaction status badges */
+.status-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.status-badge.pending {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.status-badge.completed {
+  background: #d1fae5;
+  color: #065f46;
+}
+
+.status-badge.failed {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.status-badge.processing {
+  background: #dbeafe;
+  color: #1e40af;
+}
+
+/* Currency selector styles */
+.currency-option {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 0;
+}
+
+.currency-option .flag {
+  width: 24px;
+  height: 18px;
+  border-radius: 2px;
+}
+
+.currency-option .currency-info {
+  flex: 1;
+}
+
+.currency-option .currency-code {
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.currency-option .currency-name {
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+/* Loading skeleton */
+.skeleton {
+  background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+  background-size: 200% 100%;
+  animation: skeleton-loading 1.5s infinite;
+  border-radius: var(--radius-sm);
+}
+
+@keyframes skeleton-loading {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}
+
+/* Amount input highlight */
+.amount-input-large .ant-input-number-input {
+  font-size: 32px !important;
+  font-weight: 700 !important;
+  text-align: center;
+}
+
+/* Selected wallet highlight */
+.wallet-selected-indicator {
+  position: absolute;
+  top: -8px;
+  right: 12px;
+  background: var(--primary-color);
+  color: white;
+  padding: 4px 12px;
+  border-radius: 12px;
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+

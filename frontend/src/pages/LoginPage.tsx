@@ -105,16 +105,16 @@ export default function LoginPage() {
           display: 'flex',
           justifyContent: 'center',
           alignItems: 'center',
-          padding: 48,
+          padding: 'clamp(16px, 5vw, 48px)',
           background: '#f9fafb',
         }}
       >
         <div style={{ width: '100%', maxWidth: 400 }}>
-          <div style={{ textAlign: 'center', marginBottom: 32 }}>
-            <Title level={2} style={{ marginBottom: 8 }}>
+          <div style={{ textAlign: 'center', marginBottom: 'clamp(16px, 4vw, 32px)' }}>
+            <Title level={2} style={{ marginBottom: 8, fontSize: 'clamp(20px, 5vw, 28px)' }}>
               {activeTab === 'login' ? 'Welcome Back' : 'Create Account'}
             </Title>
-            <Text type="secondary">
+            <Text type="secondary" style={{ fontSize: 'clamp(12px, 2.5vw, 14px)' }}>
               {activeTab === 'login'
                 ? 'Enter your credentials to access your wallet'
                 : 'Sign up to start managing your digital wallet'}

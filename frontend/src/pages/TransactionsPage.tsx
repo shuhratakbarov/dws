@@ -231,12 +231,18 @@ export default function TransactionsPage() {
   });
 
   return (
-    <div style={{ padding: 24 }}>
-      <Row gutter={[24, 24]}>
+    <div style={{ padding: 'clamp(12px, 3vw, 24px)' }}>
+      <Row gutter={[16, 16]}>
         {/* Header */}
         <Col span={24}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <Title level={2}>
+          <div style={{
+            display: 'flex',
+            flexWrap: 'wrap',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            gap: 12
+          }}>
+            <Title level={2} style={{ margin: 0, fontSize: 'clamp(18px, 4vw, 24px)' }}>
               <HistoryOutlined /> Transaction History
             </Title>
             <Button icon={<DownloadOutlined />} onClick={handleExport}>
@@ -346,20 +352,26 @@ export default function TransactionsPage() {
 
         {/* Transactions Table */}
         <Col span={24}>
-          <Card>
+          <Card styles={{ body: { padding: 0 } }}>
             {wallets.length === 0 ? (
-              <Empty description="No wallets found. Create a wallet first." />
+              <div style={{ padding: 24 }}>
+                <Empty description="No wallets found. Create a wallet first." />
+              </div>
             ) : (
               <Table
                 dataSource={filteredTransactions}
                 columns={columns}
                 rowKey="id"
                 loading={loading}
+                scroll={{ x: 800 }}
+                size="small"
                 pagination={{
                   ...pagination,
-                  showSizeChanger: true,
-                  showTotal: (total) => `Total ${total} transactions`,
+                  showSizeChanger: false,
+                  size: 'small',
+                  showTotal: (total) => `${total} transactions`,
                   onChange: (page, pageSize) => setPagination({ ...pagination, current: page, pageSize }),
+                  style: { marginRight: 16, marginBottom: 16 }
                 }}
               />
             )}

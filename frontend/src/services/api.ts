@@ -1,8 +1,8 @@
 import axios, { AxiosError, InternalAxiosRequestConfig } from 'axios';
 
 const API_BASE_URL = import.meta.env.VITE_API_URL
-    ? `${import.meta.env.VITE_API_URL}/api/v1`
-    : '/api/v1';
+    ? `${import.meta.env.VITE_API_URL}`
+    : '';
 
 
 // Flag to prevent multiple refresh attempts

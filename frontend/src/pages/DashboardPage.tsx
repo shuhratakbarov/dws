@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
   Row,
   Col,
@@ -18,6 +18,8 @@ import {
   Empty,
   Spin,
   Tooltip,
+  Divider,
+  Alert,
 } from 'antd';
 import {
   WalletOutlined,
@@ -32,12 +34,22 @@ import {
   EuroCircleOutlined,
   PoundCircleOutlined,
   HistoryOutlined,
+  CreditCardOutlined,
+  SafetyOutlined,
 } from '@ant-design/icons';
 import { walletService } from '../services/walletService';
-import { Wallet, TransactionResponse, formatCurrency, generateIdempotencyKey, CURRENCIES } from '../types';
+import { Wallet, TransactionResponse, formatCurrency, generateIdempotencyKey, CURRENCIES, TAX_RATES, calculateTax } from '../types';
 
 const { Title, Text } = Typography;
 const { Option } = Select;
+
+// Card types with logos
+const CARD_TYPES = [
+  { value: 'VISA', label: 'Visa', color: '#1a1f71' },
+  { value: 'MASTERCARD', label: 'Mastercard', color: '#eb001b' },
+  { value: 'UZCARD', label: 'UzCard', color: '#00a651' },
+  { value: 'HUMO', label: 'Humo', color: '#0033a0' },
+];
 
 // Currency icons and colors
 const WALLET_STYLES: Record<string, { gradient: string; icon: React.ReactNode }> = {
@@ -71,7 +83,27 @@ export default function DashboardPage() {
   // Idempotency keys (generated when modal opens, not on submit)
   const [currentIdempotencyKey, setCurrentIdempotencyKey] = useState<string>('');
 
+  // Card type and amount for tax calculation
+  const [depositCardType, setDepositCardType] = useState<string>('VISA');
+  const [depositAmount, setDepositAmount] = useState<number>(0);
+  const [withdrawCardType, setWithdrawCardType] = useState<string>('VISA');
+  const [withdrawAmount, setWithdrawAmount] = useState<number>(0);
+
   const [form] = Form.useForm();
+
+  // Calculate tax for deposit
+  const depositTaxInfo = useMemo(() => {
+    if (depositAmount <= 0) return { tax: 0, total: 0, rate: 0 };
+    const amountInMinor = Math.round(depositAmount * 100);
+    return calculateTax(amountInMinor, depositCardType);
+  }, [depositAmount, depositCardType]);
+
+  // Calculate tax for withdrawal
+  const withdrawTaxInfo = useMemo(() => {
+    if (withdrawAmount <= 0) return { tax: 0, total: 0, rate: 0 };
+    const amountInMinor = Math.round(withdrawAmount * 100);
+    return calculateTax(amountInMinor, withdrawCardType);
+  }, [withdrawAmount, withdrawCardType]);
 
   useEffect(() => {
     loadWallets();
@@ -201,12 +233,16 @@ export default function DashboardPage() {
   // Helper to open modals and generate new idempotency key
   const openDepositModal = () => {
     setCurrentIdempotencyKey(generateIdempotencyKey());
+    setDepositCardType('VISA');
+    setDepositAmount(0);
     form.resetFields();
     setDepositModal(true);
   };
 
   const openWithdrawModal = () => {
     setCurrentIdempotencyKey(generateIdempotencyKey());
+    setWithdrawCardType('VISA');
+    setWithdrawAmount(0);
     form.resetFields();
     setWithdrawModal(true);
   };
@@ -316,18 +352,26 @@ export default function DashboardPage() {
   }
 
   return (
-    <div style={{ padding: 24 }}>
-      <Row gutter={[24, 24]}>
+    <div style={{ padding: '16px 16px', maxWidth: '100%' }}>
+      <Row gutter={[16, 16]}>
         {/* Header */}
         <Col span={24}>
-          <div className="page-header">
-            <div>
-              <Title level={2} style={{ marginBottom: 4 }}>
+          <div className="page-header" style={{
+            display: 'flex',
+            flexWrap: 'wrap',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            gap: '12px'
+          }}>
+            <div style={{ minWidth: '200px' }}>
+              <Title level={2} style={{ marginBottom: 4, fontSize: 'clamp(20px, 4vw, 28px)' }}>
                 Dashboard
               </Title>
-              <Text type="secondary">Manage your digital wallets and transactions</Text>
+              <Text type="secondary" style={{ fontSize: 'clamp(12px, 2.5vw, 14px)' }}>
+                Manage your digital wallets and transactions
+              </Text>
             </div>
-            <Space>
+            <Space wrap className="header-actions">
               <Button icon={<ReloadOutlined />} onClick={loadWallets}>
                 Refresh
               </Button>
@@ -470,27 +514,42 @@ export default function DashboardPage() {
             {/* Action Buttons for Selected Wallet */}
             {selectedWallet && (
               <Col span={24}>
-                <Card>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 16 }}>
+                <Card styles={{ body: { padding: 'clamp(12px, 3vw, 20px)' } }}>
+                  <div style={{
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: 16
+                  }}>
                     <div>
-                      <Text type="secondary">Selected Wallet</Text>
-                      <div>
-                        <Text strong style={{ fontSize: 18 }}>
+                      <Text type="secondary" style={{ fontSize: 'clamp(11px, 2vw, 13px)' }}>
+                        Selected Wallet
+                      </Text>
+                      <div style={{
+                        display: 'flex',
+                        flexWrap: 'wrap',
+                        alignItems: 'center',
+                        gap: '8px 16px'
+                      }}>
+                        <Text strong style={{ fontSize: 'clamp(14px, 3vw, 18px)' }}>
                           {CURRENCIES[selectedWallet.currency]?.name || selectedWallet.currency} ({selectedWallet.currency})
                         </Text>
-                        <Text style={{ marginLeft: 12, fontSize: 18, fontWeight: 600, color: '#4f46e5' }}>
+                        <Text style={{ fontSize: 'clamp(14px, 3vw, 18px)', fontWeight: 600, color: '#4f46e5' }}>
                           {formatCurrency(selectedWallet.balance ?? selectedWallet.balanceMinorUnits, selectedWallet.currency)}
                         </Text>
                       </div>
                     </div>
-                    <Space size="middle" wrap>
+                    <div className="action-buttons" style={{
+                      display: 'flex',
+                      flexWrap: 'wrap',
+                      gap: '8px'
+                    }}>
                       <Tooltip title="Add funds to your wallet">
                         <Button
                           type="primary"
                           size="large"
                           icon={<ArrowDownOutlined />}
                           onClick={openDepositModal}
-                          style={{ background: '#10b981', borderColor: '#10b981' }}
+                          style={{ background: '#10b981', borderColor: '#10b981', flex: '1 1 auto', minWidth: '120px' }}
                         >
                           Deposit
                         </Button>
@@ -501,6 +560,7 @@ export default function DashboardPage() {
                           danger
                           icon={<ArrowUpOutlined />}
                           onClick={openWithdrawModal}
+                          style={{ flex: '1 1 auto', minWidth: '120px' }}
                         >
                           Withdraw
                         </Button>
@@ -510,11 +570,12 @@ export default function DashboardPage() {
                           size="large"
                           icon={<SwapOutlined />}
                           onClick={openTransferModal}
+                          style={{ flex: '1 1 auto', minWidth: '120px' }}
                         >
                           Transfer
                         </Button>
                       </Tooltip>
-                    </Space>
+                    </div>
                   </div>
                 </Card>
               </Col>
@@ -527,20 +588,31 @@ export default function DashboardPage() {
                   title={
                     <Space>
                       <HistoryOutlined />
-                      <span>Transaction History</span>
+                      <span style={{ fontSize: 'clamp(14px, 2.5vw, 16px)' }}>Transaction History</span>
                     </Space>
                   }
                   extra={
-                    <Text type="secondary">{transactions.length} transactions</Text>
+                    <Text type="secondary" style={{ fontSize: 'clamp(11px, 2vw, 13px)' }}>
+                      {transactions.length} transactions
+                    </Text>
                   }
+                  styles={{ body: { padding: 0 } }}
                 >
                   <Table
                     dataSource={transactions}
                     columns={transactionColumns}
                     rowKey="id"
                     loading={transactionsLoading}
-                    pagination={{ pageSize: 10, showSizeChanger: false }}
+                    pagination={{
+                      pageSize: 10,
+                      showSizeChanger: false,
+                      size: 'small',
+                      style: { marginRight: 16, marginBottom: 16 }
+                    }}
                     locale={{ emptyText: 'No transactions yet' }}
+                    scroll={{ x: 700 }}
+                    size="small"
+                    style={{ minWidth: '100%' }}
                   />
                 </Card>
               </Col>
@@ -587,13 +659,134 @@ export default function DashboardPage() {
 
       {/* Deposit Modal */}
       <Modal
-        title={`Deposit to ${selectedWallet?.currency || ''} Wallet`}
+        title={
+          <Space>
+            <ArrowDownOutlined style={{ color: '#10b981' }} />
+            <span>Deposit to {selectedWallet?.currency || ''} Wallet</span>
+          </Space>
+        }
         open={depositModal}
-        onCancel={() => { setDepositModal(false); form.resetFields(); }}
+        onCancel={() => { setDepositModal(false); form.resetFields(); setDepositAmount(0); }}
         footer={null}
         centered
+        width={480}
       >
         <Form form={form} onFinish={handleDeposit} layout="vertical" style={{ marginTop: 16 }}>
+          {/* Card Type Selection */}
+          <Form.Item
+            name="cardType"
+            label="Select Card Type"
+            rules={[{ required: true, message: 'Please select card type' }]}
+            initialValue="VISA"
+          >
+            <Select
+              size="large"
+              onChange={(value) => setDepositCardType(value)}
+            >
+              {CARD_TYPES.map((card) => (
+                <Option key={card.value} value={card.value}>
+                  <Space>
+                    <div style={{
+                      width: 40,
+                      height: 24,
+                      background: card.color,
+                      borderRadius: 4,
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                    }}>
+                      <Text style={{ color: '#fff', fontSize: 10, fontWeight: 700 }}>{card.label.substring(0, 4).toUpperCase()}</Text>
+                    </div>
+                    <span>{card.label}</span>
+                    <Text type="secondary" style={{ fontSize: 12 }}>({TAX_RATES[card.value]?.rate * 100}% fee)</Text>
+                  </Space>
+                </Option>
+              ))}
+            </Select>
+          </Form.Item>
+
+          <Divider style={{ margin: '16px 0' }} />
+
+          {/* Card Details */}
+          <div style={{ background: '#f9fafb', padding: 16, borderRadius: 8, marginBottom: 16 }}>
+            <Space style={{ marginBottom: 12 }}>
+              <CreditCardOutlined />
+              <Text strong>Card Details</Text>
+              <SafetyOutlined style={{ color: '#10b981' }} />
+            </Space>
+
+            <Form.Item
+              name="cardNumber"
+              label="Card Number"
+              rules={[
+                { required: true, message: 'Please enter card number' },
+                { pattern: /^[\d\s]{16,19}$/, message: 'Enter a valid card number' }
+              ]}
+            >
+              <Input
+                placeholder="1234 5678 9012 3456"
+                maxLength={19}
+                size="large"
+                prefix={<CreditCardOutlined style={{ color: '#9ca3af' }} />}
+                onChange={(e) => {
+                  const value = e.target.value.replace(/\s/g, '').replace(/(\d{4})/g, '$1 ').trim();
+                  form.setFieldValue('cardNumber', value);
+                }}
+              />
+            </Form.Item>
+
+            <Row gutter={12}>
+              <Col span={12}>
+                <Form.Item
+                  name="expiryDate"
+                  label="Expiry Date"
+                  rules={[
+                    { required: true, message: 'Required' },
+                    { pattern: /^(0[1-9]|1[0-2])\/\d{2}$/, message: 'Use MM/YY format' }
+                  ]}
+                >
+                  <Input
+                    placeholder="MM/YY"
+                    maxLength={5}
+                    size="large"
+                    onChange={(e) => {
+                      let value = e.target.value.replace(/\D/g, '');
+                      if (value.length >= 2) {
+                        value = value.slice(0, 2) + '/' + value.slice(2, 4);
+                      }
+                      form.setFieldValue('expiryDate', value);
+                    }}
+                  />
+                </Form.Item>
+              </Col>
+              <Col span={12}>
+                <Form.Item
+                  name="cvv"
+                  label="CVV"
+                  rules={[
+                    { required: true, message: 'Required' },
+                    { pattern: /^\d{3,4}$/, message: 'Invalid CVV' }
+                  ]}
+                >
+                  <Input.Password
+                    placeholder="123"
+                    maxLength={4}
+                    size="large"
+                    visibilityToggle={false}
+                  />
+                </Form.Item>
+              </Col>
+            </Row>
+
+            <Form.Item
+              name="cardholderName"
+              label="Cardholder Name"
+              rules={[{ required: true, message: 'Please enter cardholder name' }]}
+            >
+              <Input placeholder="JOHN DOE" size="large" style={{ textTransform: 'uppercase' }} />
+            </Form.Item>
+          </div>
+
           <Form.Item
             name="amount"
             label="Amount"
@@ -609,14 +802,56 @@ export default function DashboardPage() {
               precision={2}
               min={0.01}
               placeholder="0.00"
+              onChange={(value) => setDepositAmount(value || 0)}
             />
           </Form.Item>
+
+          {/* Tax Breakdown */}
+          {depositAmount > 0 && (
+            <Alert
+              type="info"
+              style={{ marginBottom: 16 }}
+              message={
+                <div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
+                    <Text>Amount:</Text>
+                    <Text>{formatCurrency(Math.round(depositAmount * 100), selectedWallet?.currency || 'USD')}</Text>
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
+                    <Text>Service fee ({depositTaxInfo.rate}%):</Text>
+                    <Text>{formatCurrency(depositTaxInfo.tax, selectedWallet?.currency || 'USD')}</Text>
+                  </div>
+                  <Divider style={{ margin: '8px 0' }} />
+                  <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                    <Text strong>Total to pay:</Text>
+                    <Text strong style={{ color: '#10b981', fontSize: 16 }}>
+                      {formatCurrency(depositTaxInfo.total, selectedWallet?.currency || 'USD')}
+                    </Text>
+                  </div>
+                </div>
+              }
+            />
+          )}
+
           <Form.Item name="description" label="Description (optional)">
             <Input placeholder="e.g., Salary, Savings, etc." size="large" />
           </Form.Item>
-          <Form.Item style={{ marginBottom: 0, marginTop: 24 }}>
+
+          <div style={{ background: '#ecfdf5', padding: 12, borderRadius: 8, marginBottom: 16 }}>
+            <Space>
+              <SafetyOutlined style={{ color: '#10b981' }} />
+              <Text style={{ color: '#065f46', fontSize: 12 }}>
+                Your payment information is encrypted and secure
+              </Text>
+            </Space>
+          </div>
+
+          <Form.Item style={{ marginBottom: 0 }}>
             <Button type="primary" htmlType="submit" block size="large" loading={depositLoading} disabled={depositLoading} style={{ background: '#10b981', borderColor: '#10b981' }}>
-              Deposit
+              {depositAmount > 0
+                ? `Deposit ${formatCurrency(depositTaxInfo.total, selectedWallet?.currency || 'USD')}`
+                : 'Deposit Funds'
+              }
             </Button>
           </Form.Item>
         </Form>
@@ -624,11 +859,17 @@ export default function DashboardPage() {
 
       {/* Withdraw Modal */}
       <Modal
-        title={`Withdraw from ${selectedWallet?.currency} Wallet`}
+        title={
+          <Space>
+            <ArrowUpOutlined style={{ color: '#ef4444' }} />
+            <span>Withdraw from {selectedWallet?.currency} Wallet</span>
+          </Space>
+        }
         open={withdrawModal}
-        onCancel={() => { setWithdrawModal(false); form.resetFields(); }}
+        onCancel={() => { setWithdrawModal(false); form.resetFields(); setWithdrawAmount(0); }}
         footer={null}
         centered
+        width={480}
       >
         <div style={{ marginBottom: 16, padding: 12, background: '#fef3c7', borderRadius: 8 }}>
           <Text>
@@ -636,6 +877,77 @@ export default function DashboardPage() {
           </Text>
         </div>
         <Form form={form} onFinish={handleWithdraw} layout="vertical">
+          {/* Card Type Selection */}
+          <Form.Item
+            name="cardType"
+            label="Select Card Type"
+            rules={[{ required: true, message: 'Please select card type' }]}
+            initialValue="VISA"
+          >
+            <Select
+              size="large"
+              onChange={(value) => setWithdrawCardType(value)}
+            >
+              {CARD_TYPES.map((card) => (
+                <Option key={card.value} value={card.value}>
+                  <Space>
+                    <div style={{
+                      width: 40,
+                      height: 24,
+                      background: card.color,
+                      borderRadius: 4,
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                    }}>
+                      <Text style={{ color: '#fff', fontSize: 10, fontWeight: 700 }}>{card.label.substring(0, 4).toUpperCase()}</Text>
+                    </div>
+                    <span>{card.label}</span>
+                    <Text type="secondary" style={{ fontSize: 12 }}>({TAX_RATES[card.value]?.rate * 100}% fee)</Text>
+                  </Space>
+                </Option>
+              ))}
+            </Select>
+          </Form.Item>
+
+          <Divider style={{ margin: '16px 0' }} />
+
+          {/* Card Details for Withdrawal */}
+          <div style={{ background: '#f9fafb', padding: 16, borderRadius: 8, marginBottom: 16 }}>
+            <Space style={{ marginBottom: 12 }}>
+              <CreditCardOutlined />
+              <Text strong>Destination Card</Text>
+            </Space>
+
+            <Form.Item
+              name="destinationCardNumber"
+              label="Card Number"
+              rules={[
+                { required: true, message: 'Please enter card number' },
+                { pattern: /^[\d\s]{16,19}$/, message: 'Enter a valid card number' }
+              ]}
+            >
+              <Input
+                placeholder="1234 5678 9012 3456"
+                maxLength={19}
+                size="large"
+                prefix={<CreditCardOutlined style={{ color: '#9ca3af' }} />}
+                onChange={(e) => {
+                  const value = e.target.value.replace(/\s/g, '').replace(/(\d{4})/g, '$1 ').trim();
+                  form.setFieldValue('destinationCardNumber', value);
+                }}
+              />
+            </Form.Item>
+
+            <Form.Item
+              name="cardholderName"
+              label="Cardholder Name"
+              rules={[{ required: true, message: 'Please enter cardholder name' }]}
+            >
+              <Input placeholder="JOHN DOE" size="large" style={{ textTransform: 'uppercase' }} />
+            </Form.Item>
+          </div>
+
           <Form.Item
             name="amount"
             label="Amount"
@@ -652,14 +964,53 @@ export default function DashboardPage() {
               min={0.01}
               max={(selectedWallet?.balance ?? selectedWallet?.balanceMinorUnits ?? 0) / 100}
               placeholder="0.00"
+              onChange={(value) => setWithdrawAmount(value || 0)}
             />
           </Form.Item>
+
+          {/* Tax Breakdown */}
+          {withdrawAmount > 0 && (
+            <Alert
+              type="warning"
+              style={{ marginBottom: 16 }}
+              message={
+                <div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
+                    <Text>Withdrawal amount:</Text>
+                    <Text>{formatCurrency(Math.round(withdrawAmount * 100), selectedWallet?.currency || 'USD')}</Text>
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
+                    <Text>Service fee ({withdrawTaxInfo.rate}%):</Text>
+                    <Text type="danger">-{formatCurrency(withdrawTaxInfo.tax, selectedWallet?.currency || 'USD')}</Text>
+                  </div>
+                  <Divider style={{ margin: '8px 0' }} />
+                  <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                    <Text strong>You will receive:</Text>
+                    <Text strong style={{ color: '#059669', fontSize: 16 }}>
+                      {formatCurrency(Math.round(withdrawAmount * 100) - withdrawTaxInfo.tax, selectedWallet?.currency || 'USD')}
+                    </Text>
+                  </div>
+                </div>
+              }
+            />
+          )}
+
           <Form.Item name="description" label="Description (optional)">
             <Input placeholder="e.g., ATM withdrawal, etc." size="large" />
           </Form.Item>
-          <Form.Item style={{ marginBottom: 0, marginTop: 24 }}>
+
+          <div style={{ background: '#fef2f2', padding: 12, borderRadius: 8, marginBottom: 16 }}>
+            <Text style={{ color: '#991b1b', fontSize: 12 }}>
+              ⚠️ Withdrawals typically take 1-3 business days to process
+            </Text>
+          </div>
+
+          <Form.Item style={{ marginBottom: 0 }}>
             <Button type="primary" htmlType="submit" block size="large" danger loading={withdrawLoading} disabled={withdrawLoading}>
-              Withdraw Funds
+              {withdrawAmount > 0
+                ? `Withdraw ${formatCurrency(Math.round(withdrawAmount * 100), selectedWallet?.currency || 'USD')}`
+                : 'Withdraw Funds'
+              }
             </Button>
           </Form.Item>
         </Form>
