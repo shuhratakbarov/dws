@@ -33,7 +33,6 @@ export interface User {
 }
 
 // Wallet types
-// Wallet types
 export interface Wallet {
   id: string;
   userId: string;
@@ -44,6 +43,35 @@ export interface Wallet {
   createdAt?: string;
   updatedAt?: string;
 }
+
+// Saved recipient for quick transfers
+export interface SavedRecipient {
+  id: string;
+  name: string;
+  email?: string;
+  phone?: string;
+  walletId: string;
+  currency: string;
+  lastUsed?: string;
+}
+
+// Recent transfer
+export interface RecentTransfer {
+  recipientEmail?: string;
+  recipientPhone?: string;
+  walletId: string;
+  name: string;
+  currency: string;
+  timestamp: string;
+}
+
+// Card types with their requirements
+export const CARD_REQUIREMENTS: Record<string, { requiresCvv: boolean; requiresCardholderName: boolean }> = {
+  VISA: { requiresCvv: true, requiresCardholderName: true },
+  MASTERCARD: { requiresCvv: true, requiresCardholderName: true },
+  UZCARD: { requiresCvv: false, requiresCardholderName: false },
+  HUMO: { requiresCvv: false, requiresCardholderName: false },
+};
 
 export interface CreateWalletRequest {
   currency: string;
@@ -116,6 +144,49 @@ export function calculateTax(amount: number, cardType: string): { tax: number; t
   return {
     tax,
     total: amount + tax,
+    rate: taxInfo.rate * 100,
+  };
+}
+
+// Calculate tax when user wants to receive exact amount (reverse calculation)
+// If user wants to receive X, we need to charge X + fee
+export function calculateExactReceive(desiredAmount: number, cardType: string): {
+  tax: number;
+  chargeAmount: number;
+  receiveAmount: number;
+  rate: number;
+} {
+  const taxInfo = TAX_RATES[cardType] || { rate: 0.02, name: 'Standard' };
+  // To receive X after fee deduction from charge:
+  // charge = desiredAmount + fee
+  // fee = charge * rate
+  // So: charge = desiredAmount / (1 - rate) approximately
+  // But we add fee on top, so: charge = desiredAmount + (desiredAmount * rate) = desiredAmount * (1 + rate)
+  const tax = Math.ceil(desiredAmount * taxInfo.rate);
+  return {
+    tax,
+    chargeAmount: desiredAmount + tax,
+    receiveAmount: desiredAmount,
+    rate: taxInfo.rate * 100,
+  };
+}
+
+// Calculate exact debit from card (user specifies what to withdraw from card)
+export function calculateExactDebit(cardAmount: number, cardType: string): {
+  tax: number;
+  chargeAmount: number;
+  receiveAmount: number;
+  rate: number;
+} {
+  const taxInfo = TAX_RATES[cardType] || { rate: 0.02, name: 'Standard' };
+  // charge = cardAmount (what user pays from card)
+  // fee = cardAmount * rate
+  // receive = cardAmount - fee
+  const tax = Math.ceil(cardAmount * taxInfo.rate);
+  return {
+    tax,
+    chargeAmount: cardAmount,
+    receiveAmount: cardAmount - tax,
     rate: taxInfo.rate * 100,
   };
 }

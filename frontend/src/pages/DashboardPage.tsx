@@ -20,6 +20,9 @@ import {
   Tooltip,
   Divider,
   Alert,
+  Checkbox,
+  Radio,
+  List,
 } from 'antd';
 import {
   WalletOutlined,
@@ -36,9 +39,15 @@ import {
   HistoryOutlined,
   CreditCardOutlined,
   SafetyOutlined,
+  MailOutlined,
+  UserOutlined,
+  ClockCircleOutlined,
+  StarFilled,
+  SearchOutlined,
+  DeleteOutlined,
 } from '@ant-design/icons';
 import { walletService } from '../services/walletService';
-import { Wallet, TransactionResponse, formatCurrency, generateIdempotencyKey, CURRENCIES, TAX_RATES, calculateTax } from '../types';
+import { Wallet, TransactionResponse, formatCurrency, generateIdempotencyKey, CURRENCIES, TAX_RATES, calculateTax, calculateExactReceive, calculateExactDebit, CARD_REQUIREMENTS, SavedRecipient, RecentTransfer } from '../types';
 
 const { Title, Text } = Typography;
 const { Option } = Select;
@@ -86,17 +95,38 @@ export default function DashboardPage() {
   // Card type and amount for tax calculation
   const [depositCardType, setDepositCardType] = useState<string>('VISA');
   const [depositAmount, setDepositAmount] = useState<number>(0);
+  const [depositMode, setDepositMode] = useState<'receive' | 'pay'>('receive'); // 'receive' = user enters amount to receive, 'pay' = user enters amount to pay from card
   const [withdrawCardType, setWithdrawCardType] = useState<string>('VISA');
   const [withdrawAmount, setWithdrawAmount] = useState<number>(0);
 
+  // Transfer recipient states
+  const [transferMode, setTransferMode] = useState<'email' | 'recent' | 'saved'>('email');
+  const [recipientEmail, setRecipientEmail] = useState<string>('');
+  const [recipientSearching, setRecipientSearching] = useState(false);
+  const [foundRecipientWallet, setFoundRecipientWallet] = useState<Wallet | null>(null);
+  const [recipientError, setRecipientError] = useState<string>('');
+  const [savedRecipients, setSavedRecipients] = useState<SavedRecipient[]>([]);
+  const [recentTransfers, setRecentTransfers] = useState<RecentTransfer[]>([]);
+  const [selectedRecipient, setSelectedRecipient] = useState<SavedRecipient | RecentTransfer | null>(null);
+  const [saveRecipient, setSaveRecipient] = useState(false);
+  const [recipientName, setRecipientName] = useState<string>('');
+
   const [form] = Form.useForm();
 
-  // Calculate tax for deposit
+  // Calculate tax for deposit based on mode
   const depositTaxInfo = useMemo(() => {
-    if (depositAmount <= 0) return { tax: 0, total: 0, rate: 0 };
+    if (depositAmount <= 0) return { tax: 0, total: 0, rate: 0, receiveAmount: 0, chargeAmount: 0 };
     const amountInMinor = Math.round(depositAmount * 100);
-    return calculateTax(amountInMinor, depositCardType);
-  }, [depositAmount, depositCardType]);
+    if (depositMode === 'receive') {
+      // User wants to receive exact amount, calculate what to charge
+      const result = calculateExactReceive(amountInMinor, depositCardType);
+      return { ...result, total: result.chargeAmount };
+    } else {
+      // User specifies amount to pay from card, calculate what they receive
+      const result = calculateExactDebit(amountInMinor, depositCardType);
+      return { ...result, total: result.chargeAmount };
+    }
+  }, [depositAmount, depositCardType, depositMode]);
 
   // Calculate tax for withdrawal
   const withdrawTaxInfo = useMemo(() => {
@@ -129,6 +159,9 @@ export default function DashboardPage() {
       } else if (data.length > 0) {
         setSelectedWallet(data[0]);
       }
+      // Load saved recipients and recent transfers
+      setSavedRecipients(walletService.getSavedRecipients());
+      setRecentTransfers(walletService.getRecentTransfers());
     } catch (error: any) {
       message.error('Failed to load wallets');
     } finally {
@@ -169,8 +202,18 @@ export default function DashboardPage() {
     if (!selectedWallet || depositLoading) return; // Prevent double-clicks
     setDepositLoading(true);
     try {
+      // Amount to add to wallet depends on mode
+      let depositAmountMinor: number;
+      if (depositMode === 'receive') {
+        // User specified what they want to receive
+        depositAmountMinor = Math.round(values.amount * 100);
+      } else {
+        // User specified what to charge from card, calculate receive
+        depositAmountMinor = depositTaxInfo.receiveAmount || Math.round(values.amount * 100);
+      }
+
       await walletService.deposit(selectedWallet.id, {
-        amountMinorUnits: Math.round(values.amount * 100),
+        amountMinorUnits: depositAmountMinor,
         idempotencyKey: currentIdempotencyKey, // Use pre-generated key
         description: values.description,
       });
@@ -207,17 +250,64 @@ export default function DashboardPage() {
     }
   };
 
-  const handleTransfer = async (values: { toWalletId: string; amount: number; description?: string }) => {
+  const handleTransfer = async (values: { toWalletId?: string; amount: number; description?: string }) => {
     if (!selectedWallet || transferLoading) return; // Prevent double-clicks
+
+    // Determine target wallet ID
+    let targetWalletId = values.toWalletId;
+    let recipientInfo: { name: string; email?: string; walletId: string; currency: string } | null = null;
+
+    if (transferMode === 'email' && foundRecipientWallet) {
+      targetWalletId = foundRecipientWallet.id;
+      recipientInfo = {
+        name: recipientName || recipientEmail,
+        email: recipientEmail,
+        walletId: foundRecipientWallet.id,
+        currency: foundRecipientWallet.currency,
+      };
+    } else if ((transferMode === 'recent' || transferMode === 'saved') && selectedRecipient) {
+      targetWalletId = selectedRecipient.walletId;
+      recipientInfo = {
+        name: selectedRecipient.name,
+        email: 'recipientEmail' in selectedRecipient ? selectedRecipient.recipientEmail : undefined,
+        walletId: selectedRecipient.walletId,
+        currency: selectedRecipient.currency,
+      };
+    }
+
+    if (!targetWalletId) {
+      message.error('Please select a recipient');
+      return;
+    }
+
     setTransferLoading(true);
     try {
       await walletService.transfer({
         fromWalletId: selectedWallet.id,
-        toWalletId: values.toWalletId,
+        toWalletId: targetWalletId,
         amountMinorUnits: Math.round(values.amount * 100),
         idempotencyKey: currentIdempotencyKey, // Use pre-generated key
         description: values.description,
       });
+
+      // Add to recent transfers
+      if (recipientInfo) {
+        walletService.addRecentTransfer(recipientInfo);
+        setRecentTransfers(walletService.getRecentTransfers());
+
+        // Save recipient if requested
+        if (saveRecipient && recipientInfo) {
+          walletService.saveRecipient({
+            id: `saved-${Date.now()}`,
+            name: recipientName || recipientInfo.name,
+            email: recipientInfo.email,
+            walletId: recipientInfo.walletId,
+            currency: recipientInfo.currency,
+          });
+          setSavedRecipients(walletService.getSavedRecipients());
+        }
+      }
+
       setTransferModal(false);
       form.resetFields();
       loadWallets();
@@ -235,6 +325,7 @@ export default function DashboardPage() {
     setCurrentIdempotencyKey(generateIdempotencyKey());
     setDepositCardType('VISA');
     setDepositAmount(0);
+    setDepositMode('receive');
     form.resetFields();
     setDepositModal(true);
   };
@@ -249,6 +340,13 @@ export default function DashboardPage() {
 
   const openTransferModal = () => {
     setCurrentIdempotencyKey(generateIdempotencyKey());
+    setTransferMode('email');
+    setRecipientEmail('');
+    setFoundRecipientWallet(null);
+    setRecipientError('');
+    setSelectedRecipient(null);
+    setSaveRecipient(false);
+    setRecipientName('');
     form.resetFields();
     setTransferModal(true);
   };
@@ -256,6 +354,31 @@ export default function DashboardPage() {
   const openCreateWalletModal = () => {
     form.resetFields();
     setCreateWalletModal(true);
+  };
+
+  // Search for recipient wallet by email
+  const searchRecipientByEmail = async () => {
+    if (!recipientEmail || !selectedWallet) {
+      setRecipientError('Please enter an email address');
+      return;
+    }
+
+    setRecipientSearching(true);
+    setRecipientError('');
+    setFoundRecipientWallet(null);
+
+    try {
+      const wallet = await walletService.findWalletByEmail(recipientEmail, selectedWallet.currency);
+      if (wallet) {
+        setFoundRecipientWallet(wallet);
+      } else {
+        setRecipientError(`No ${selectedWallet.currency} wallet found for this email`);
+      }
+    } catch (error: any) {
+      setRecipientError(error.response?.data?.message || 'Failed to find recipient');
+    } finally {
+      setRecipientSearching(false);
+    }
   };
 
   const copyWalletId = (id: string) => {
@@ -492,17 +615,18 @@ export default function DashboardPage() {
                         {formatCurrency(wallet.balance ?? wallet.balanceMinorUnits, wallet.currency)}
                       </div>
                       <div style={{ marginTop: 12, display: 'flex', alignItems: 'center', gap: 8 }}>
-                        <Text style={{ color: 'rgba(255,255,255,0.7)', fontSize: 11 }}>
-                          ID: {wallet.id.slice(0, 8)}...
-                        </Text>
-                        <Tooltip title={copiedId === wallet.id ? 'Copied!' : 'Copy ID'}>
+                        <Tooltip title={`Full ID: ${wallet.id}`}>
                           <Button
                             type="text"
                             size="small"
                             icon={copiedId === wallet.id ? <CheckCircleOutlined /> : <CopyOutlined />}
                             onClick={(e) => { e.stopPropagation(); copyWalletId(wallet.id); }}
                             style={{ color: 'rgba(255,255,255,0.8)', padding: 0 }}
-                          />
+                          >
+                            <Text style={{ color: 'rgba(255,255,255,0.7)', fontSize: 11, marginLeft: 4 }}>
+                              {copiedId === wallet.id ? 'Copied!' : 'Copy ID'}
+                            </Text>
+                          </Button>
                         </Tooltip>
                       </div>
                     </div>
@@ -672,6 +796,47 @@ export default function DashboardPage() {
         width={480}
       >
         <Form form={form} onFinish={handleDeposit} layout="vertical" style={{ marginTop: 16 }}>
+          {/* Deposit Mode Selection */}
+          <div style={{ marginBottom: 16 }}>
+            <Text strong style={{ display: 'block', marginBottom: 8 }}>How do you want to deposit?</Text>
+            <Space direction="vertical" style={{ width: '100%' }}>
+              <Button
+                type={depositMode === 'receive' ? 'primary' : 'default'}
+                block
+                onClick={() => setDepositMode('receive')}
+                style={{ textAlign: 'left', height: 'auto', padding: '12px 16px' }}
+              >
+                <div>
+                  <Text strong style={{ color: depositMode === 'receive' ? '#fff' : 'inherit' }}>
+                    Specify amount to receive
+                  </Text>
+                  <br />
+                  <Text type="secondary" style={{ fontSize: 12, color: depositMode === 'receive' ? 'rgba(255,255,255,0.7)' : 'inherit' }}>
+                    Enter the exact amount you want in your wallet
+                  </Text>
+                </div>
+              </Button>
+              <Button
+                type={depositMode === 'pay' ? 'primary' : 'default'}
+                block
+                onClick={() => setDepositMode('pay')}
+                style={{ textAlign: 'left', height: 'auto', padding: '12px 16px' }}
+              >
+                <div>
+                  <Text strong style={{ color: depositMode === 'pay' ? '#fff' : 'inherit' }}>
+                    Specify amount to pay from card
+                  </Text>
+                  <br />
+                  <Text type="secondary" style={{ fontSize: 12, color: depositMode === 'pay' ? 'rgba(255,255,255,0.7)' : 'inherit' }}>
+                    Enter exact amount to charge from your card
+                  </Text>
+                </div>
+              </Button>
+            </Space>
+          </div>
+
+          <Divider style={{ margin: '16px 0' }} />
+
           {/* Card Type Selection */}
           <Form.Item
             name="cardType"
@@ -705,8 +870,6 @@ export default function DashboardPage() {
             </Select>
           </Form.Item>
 
-          <Divider style={{ margin: '16px 0' }} />
-
           {/* Card Details */}
           <div style={{ background: '#f9fafb', padding: 16, borderRadius: 8, marginBottom: 16 }}>
             <Space style={{ marginBottom: 12 }}>
@@ -736,7 +899,7 @@ export default function DashboardPage() {
             </Form.Item>
 
             <Row gutter={12}>
-              <Col span={12}>
+              <Col span={CARD_REQUIREMENTS[depositCardType]?.requiresCvv ? 12 : 24}>
                 <Form.Item
                   name="expiryDate"
                   label="Expiry Date"
@@ -759,37 +922,41 @@ export default function DashboardPage() {
                   />
                 </Form.Item>
               </Col>
-              <Col span={12}>
-                <Form.Item
-                  name="cvv"
-                  label="CVV"
-                  rules={[
-                    { required: true, message: 'Required' },
-                    { pattern: /^\d{3,4}$/, message: 'Invalid CVV' }
-                  ]}
-                >
-                  <Input.Password
-                    placeholder="123"
-                    maxLength={4}
-                    size="large"
-                    visibilityToggle={false}
-                  />
-                </Form.Item>
-              </Col>
+              {CARD_REQUIREMENTS[depositCardType]?.requiresCvv && (
+                <Col span={12}>
+                  <Form.Item
+                    name="cvv"
+                    label="CVV"
+                    rules={[
+                      { required: true, message: 'Required' },
+                      { pattern: /^\d{3,4}$/, message: 'Invalid CVV' }
+                    ]}
+                  >
+                    <Input.Password
+                      placeholder="123"
+                      maxLength={4}
+                      size="large"
+                      visibilityToggle={false}
+                    />
+                  </Form.Item>
+                </Col>
+              )}
             </Row>
 
-            <Form.Item
-              name="cardholderName"
-              label="Cardholder Name"
-              rules={[{ required: true, message: 'Please enter cardholder name' }]}
-            >
-              <Input placeholder="JOHN DOE" size="large" style={{ textTransform: 'uppercase' }} />
-            </Form.Item>
+            {CARD_REQUIREMENTS[depositCardType]?.requiresCardholderName && (
+              <Form.Item
+                name="cardholderName"
+                label="Cardholder Name"
+                rules={[{ required: true, message: 'Please enter cardholder name' }]}
+              >
+                <Input placeholder="JOHN DOE" size="large" style={{ textTransform: 'uppercase' }} />
+              </Form.Item>
+            )}
           </div>
 
           <Form.Item
             name="amount"
-            label="Amount"
+            label={depositMode === 'receive' ? 'Amount to Receive' : 'Amount to Pay from Card'}
             rules={[
               { required: true, message: 'Please enter amount' },
               { type: 'number', min: 0.01, message: 'Amount must be greater than 0' },
@@ -813,21 +980,43 @@ export default function DashboardPage() {
               style={{ marginBottom: 16 }}
               message={
                 <div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
-                    <Text>Amount:</Text>
-                    <Text>{formatCurrency(Math.round(depositAmount * 100), selectedWallet?.currency || 'USD')}</Text>
-                  </div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
-                    <Text>Service fee ({depositTaxInfo.rate}%):</Text>
-                    <Text>{formatCurrency(depositTaxInfo.tax, selectedWallet?.currency || 'USD')}</Text>
-                  </div>
-                  <Divider style={{ margin: '8px 0' }} />
-                  <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                    <Text strong>Total to pay:</Text>
-                    <Text strong style={{ color: '#10b981', fontSize: 16 }}>
-                      {formatCurrency(depositTaxInfo.total, selectedWallet?.currency || 'USD')}
-                    </Text>
-                  </div>
+                  {depositMode === 'receive' ? (
+                    <>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
+                        <Text>Amount to receive:</Text>
+                        <Text strong>{formatCurrency(Math.round(depositAmount * 100), selectedWallet?.currency || 'USD')}</Text>
+                      </div>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
+                        <Text>Service fee ({depositTaxInfo.rate}%):</Text>
+                        <Text>{formatCurrency(depositTaxInfo.tax, selectedWallet?.currency || 'USD')}</Text>
+                      </div>
+                      <Divider style={{ margin: '8px 0' }} />
+                      <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                        <Text strong>Total to pay from card:</Text>
+                        <Text strong style={{ color: '#ef4444', fontSize: 16 }}>
+                          {formatCurrency(depositTaxInfo.chargeAmount || depositTaxInfo.total, selectedWallet?.currency || 'USD')}
+                        </Text>
+                      </div>
+                    </>
+                  ) : (
+                    <>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
+                        <Text>Amount from card:</Text>
+                        <Text>{formatCurrency(Math.round(depositAmount * 100), selectedWallet?.currency || 'USD')}</Text>
+                      </div>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
+                        <Text>Service fee ({depositTaxInfo.rate}%):</Text>
+                        <Text type="danger">-{formatCurrency(depositTaxInfo.tax, selectedWallet?.currency || 'USD')}</Text>
+                      </div>
+                      <Divider style={{ margin: '8px 0' }} />
+                      <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                        <Text strong>You will receive:</Text>
+                        <Text strong style={{ color: '#10b981', fontSize: 16 }}>
+                          {formatCurrency(depositTaxInfo.receiveAmount || 0, selectedWallet?.currency || 'USD')}
+                        </Text>
+                      </div>
+                    </>
+                  )}
                 </div>
               }
             />
@@ -849,7 +1038,9 @@ export default function DashboardPage() {
           <Form.Item style={{ marginBottom: 0 }}>
             <Button type="primary" htmlType="submit" block size="large" loading={depositLoading} disabled={depositLoading} style={{ background: '#10b981', borderColor: '#10b981' }}>
               {depositAmount > 0
-                ? `Deposit ${formatCurrency(depositTaxInfo.total, selectedWallet?.currency || 'USD')}`
+                ? depositMode === 'receive'
+                  ? `Pay ${formatCurrency(depositTaxInfo.chargeAmount || depositTaxInfo.total, selectedWallet?.currency || 'USD')} to receive ${formatCurrency(Math.round(depositAmount * 100), selectedWallet?.currency || 'USD')}`
+                  : `Pay ${formatCurrency(Math.round(depositAmount * 100), selectedWallet?.currency || 'USD')} to receive ${formatCurrency(depositTaxInfo.receiveAmount || 0, selectedWallet?.currency || 'USD')}`
                 : 'Deposit Funds'
               }
             </Button>
@@ -939,13 +1130,15 @@ export default function DashboardPage() {
               />
             </Form.Item>
 
-            <Form.Item
-              name="cardholderName"
-              label="Cardholder Name"
-              rules={[{ required: true, message: 'Please enter cardholder name' }]}
-            >
-              <Input placeholder="JOHN DOE" size="large" style={{ textTransform: 'uppercase' }} />
-            </Form.Item>
+            {CARD_REQUIREMENTS[withdrawCardType]?.requiresCardholderName && (
+              <Form.Item
+                name="cardholderName"
+                label="Cardholder Name"
+                rules={[{ required: true, message: 'Please enter cardholder name' }]}
+              >
+                <Input placeholder="JOHN DOE" size="large" style={{ textTransform: 'uppercase' }} />
+              </Form.Item>
+            )}
           </div>
 
           <Form.Item
@@ -1023,7 +1216,7 @@ export default function DashboardPage() {
         onCancel={() => { setTransferModal(false); form.resetFields(); }}
         footer={null}
         centered
-        width={480}
+        width={520}
       >
         <div style={{ marginBottom: 16, padding: 12, background: '#eff6ff', borderRadius: 8 }}>
           <Text>
@@ -1032,15 +1225,207 @@ export default function DashboardPage() {
             Available: <strong>{formatCurrency(selectedWallet?.balance ?? selectedWallet?.balanceMinorUnits ?? 0, selectedWallet?.currency || 'USD')}</strong>
           </Text>
         </div>
-        <Form form={form} onFinish={handleTransfer} layout="vertical">
-          <Form.Item
-            name="toWalletId"
-            label="Recipient Wallet ID"
-            rules={[{ required: true, message: 'Please enter recipient wallet ID' }]}
-            extra="Enter the full wallet ID of the recipient"
+
+        {/* Recipient Selection Mode */}
+        <div style={{ marginBottom: 16 }}>
+          <Text strong style={{ display: 'block', marginBottom: 8 }}>Find Recipient</Text>
+          <Radio.Group
+            value={transferMode}
+            onChange={(e) => {
+              setTransferMode(e.target.value);
+              setFoundRecipientWallet(null);
+              setRecipientError('');
+              setSelectedRecipient(null);
+            }}
+            style={{ width: '100%' }}
           >
-            <Input placeholder="e.g., 550e8400-e29b-41d4-a716-446655440000" size="large" />
-          </Form.Item>
+            <Space direction="vertical" style={{ width: '100%' }}>
+              <Radio value="email" style={{ width: '100%' }}>
+                <Space>
+                  <MailOutlined />
+                  <span>Search by Email</span>
+                </Space>
+              </Radio>
+              {recentTransfers.filter(r => r.currency === selectedWallet?.currency).length > 0 && (
+                <Radio value="recent" style={{ width: '100%' }}>
+                  <Space>
+                    <ClockCircleOutlined />
+                    <span>Recent Recipients ({recentTransfers.filter(r => r.currency === selectedWallet?.currency).length})</span>
+                  </Space>
+                </Radio>
+              )}
+              {savedRecipients.filter(r => r.currency === selectedWallet?.currency).length > 0 && (
+                <Radio value="saved" style={{ width: '100%' }}>
+                  <Space>
+                    <StarFilled style={{ color: '#f59e0b' }} />
+                    <span>Saved Recipients ({savedRecipients.filter(r => r.currency === selectedWallet?.currency).length})</span>
+                  </Space>
+                </Radio>
+              )}
+            </Space>
+          </Radio.Group>
+        </div>
+
+        <Divider style={{ margin: '16px 0' }} />
+
+        <Form form={form} onFinish={handleTransfer} layout="vertical">
+          {/* Email Search Mode */}
+          {transferMode === 'email' && (
+            <>
+              <Form.Item label="Recipient's Email" required>
+                <Space.Compact style={{ width: '100%' }}>
+                  <Input
+                    placeholder="recipient@email.com"
+                    size="large"
+                    prefix={<MailOutlined style={{ color: '#9ca3af' }} />}
+                    value={recipientEmail}
+                    onChange={(e) => {
+                      setRecipientEmail(e.target.value);
+                      setFoundRecipientWallet(null);
+                      setRecipientError('');
+                    }}
+                    onPressEnter={(e) => {
+                      e.preventDefault();
+                      searchRecipientByEmail();
+                    }}
+                  />
+                  <Button
+                    type="primary"
+                    icon={<SearchOutlined />}
+                    size="large"
+                    onClick={searchRecipientByEmail}
+                    loading={recipientSearching}
+                  >
+                    Find
+                  </Button>
+                </Space.Compact>
+                {recipientError && (
+                  <Text type="danger" style={{ display: 'block', marginTop: 8 }}>{recipientError}</Text>
+                )}
+              </Form.Item>
+
+              {foundRecipientWallet && (
+                <Alert
+                  type="success"
+                  style={{ marginBottom: 16 }}
+                  message={
+                    <div>
+                      <Space>
+                        <CheckCircleOutlined style={{ color: '#10b981' }} />
+                        <Text strong>Recipient Found!</Text>
+                      </Space>
+                      <div style={{ marginTop: 8 }}>
+                        <Text type="secondary">
+                          {selectedWallet?.currency} Wallet ready to receive funds
+                        </Text>
+                      </div>
+                      <Form.Item
+                        style={{ marginTop: 12, marginBottom: 0 }}
+                        label="Save recipient name (optional)"
+                      >
+                        <Input
+                          placeholder="e.g., John Doe"
+                          value={recipientName}
+                          onChange={(e) => setRecipientName(e.target.value)}
+                          prefix={<UserOutlined />}
+                        />
+                      </Form.Item>
+                      <Checkbox
+                        checked={saveRecipient}
+                        onChange={(e) => setSaveRecipient(e.target.checked)}
+                        style={{ marginTop: 8 }}
+                      >
+                        Save to favorites for quick access
+                      </Checkbox>
+                    </div>
+                  }
+                />
+              )}
+            </>
+          )}
+
+          {/* Recent Recipients Mode */}
+          {transferMode === 'recent' && (
+            <div style={{ marginBottom: 16 }}>
+              <List
+                size="small"
+                bordered
+                dataSource={recentTransfers.filter(r => r.currency === selectedWallet?.currency)}
+                renderItem={(item) => (
+                  <List.Item
+                    style={{
+                      cursor: 'pointer',
+                      background: selectedRecipient?.walletId === item.walletId ? '#eff6ff' : 'transparent',
+                    }}
+                    onClick={() => setSelectedRecipient(item)}
+                  >
+                    <Space>
+                      <ClockCircleOutlined />
+                      <div>
+                        <Text strong>{item.name}</Text>
+                        {item.recipientEmail && <Text type="secondary" style={{ display: 'block', fontSize: 12 }}>{item.recipientEmail}</Text>}
+                      </div>
+                    </Space>
+                    {selectedRecipient?.walletId === item.walletId && (
+                      <CheckCircleOutlined style={{ color: '#10b981' }} />
+                    )}
+                  </List.Item>
+                )}
+                locale={{ emptyText: 'No recent recipients' }}
+              />
+            </div>
+          )}
+
+          {/* Saved Recipients Mode */}
+          {transferMode === 'saved' && (
+            <div style={{ marginBottom: 16 }}>
+              <List
+                size="small"
+                bordered
+                dataSource={savedRecipients.filter(r => r.currency === selectedWallet?.currency)}
+                renderItem={(item) => (
+                  <List.Item
+                    style={{
+                      cursor: 'pointer',
+                      background: selectedRecipient?.walletId === item.walletId ? '#eff6ff' : 'transparent',
+                    }}
+                    onClick={() => setSelectedRecipient(item)}
+                    actions={[
+                      <Tooltip title="Remove from saved" key="delete">
+                        <Button
+                          type="text"
+                          danger
+                          size="small"
+                          icon={<DeleteOutlined />}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            walletService.removeSavedRecipient(item.walletId);
+                            setSavedRecipients(walletService.getSavedRecipients());
+                            if (selectedRecipient?.walletId === item.walletId) {
+                              setSelectedRecipient(null);
+                            }
+                          }}
+                        />
+                      </Tooltip>
+                    ]}
+                  >
+                    <Space>
+                      <StarFilled style={{ color: '#f59e0b' }} />
+                      <div>
+                        <Text strong>{item.name}</Text>
+                        {item.email && <Text type="secondary" style={{ display: 'block', fontSize: 12 }}>{item.email}</Text>}
+                      </div>
+                    </Space>
+                    {selectedRecipient?.walletId === item.walletId && (
+                      <CheckCircleOutlined style={{ color: '#10b981' }} />
+                    )}
+                  </List.Item>
+                )}
+                locale={{ emptyText: 'No saved recipients' }}
+              />
+            </div>
+          )}
+
           <Form.Item
             name="amount"
             label="Amount"
@@ -1062,8 +1447,30 @@ export default function DashboardPage() {
           <Form.Item name="description" label="Description (optional)">
             <Input placeholder="e.g., Payment for services" size="large" />
           </Form.Item>
+
+          {/* Transfer Info */}
+          <div style={{ background: '#f0fdf4', padding: 12, borderRadius: 8, marginBottom: 16 }}>
+            <Space>
+              <CheckCircleOutlined style={{ color: '#10b981' }} />
+              <Text style={{ color: '#065f46', fontSize: 12 }}>
+                Transfers between wallets are instant and free
+              </Text>
+            </Space>
+          </div>
+
           <Form.Item style={{ marginBottom: 0, marginTop: 24 }}>
-            <Button type="primary" htmlType="submit" block size="large" loading={transferLoading} disabled={transferLoading}>
+            <Button
+              type="primary"
+              htmlType="submit"
+              block
+              size="large"
+              loading={transferLoading}
+              disabled={
+                transferLoading ||
+                (transferMode === 'email' && !foundRecipientWallet) ||
+                ((transferMode === 'recent' || transferMode === 'saved') && !selectedRecipient)
+              }
+            >
               Send Transfer
             </Button>
           </Form.Item>

@@ -1,5 +1,9 @@
 import api from './api';
-import { Wallet, CreateWalletRequest, TransactionRequest, TransactionResponse, TransferRequest } from '../types';
+import { Wallet, CreateWalletRequest, TransactionRequest, TransactionResponse, TransferRequest, SavedRecipient, RecentTransfer } from '../types';
+
+// Local storage keys
+const SAVED_RECIPIENTS_KEY = 'dws_saved_recipients';
+const RECENT_TRANSFERS_KEY = 'dws_recent_transfers';
 
 export const walletService = {
   // Get all wallets for current user
@@ -12,6 +16,21 @@ export const walletService = {
   async getWallet(walletId: string): Promise<Wallet> {
     const response = await api.get<Wallet>(`/wallets/${walletId}`);
     return response.data;
+  },
+
+  // Find wallet by user email and currency
+  async findWalletByEmail(email: string, currency: string): Promise<Wallet | null> {
+    try {
+      const response = await api.get<Wallet>('/wallets/find', {
+        params: { email, currency },
+      });
+      return response.data;
+    } catch (error: any) {
+      if (error.response?.status === 404) {
+        return null;
+      }
+      throw error;
+    }
   },
 
   // Create new wallet
@@ -60,6 +79,54 @@ export const walletService = {
   async unfreezeWallet(walletId: string): Promise<Wallet> {
     const response = await api.post<Wallet>(`/wallets/${walletId}/unfreeze`);
     return response.data;
+  },
+
+  // --- Saved Recipients (Local Storage) ---
+  getSavedRecipients(): SavedRecipient[] {
+    try {
+      const data = localStorage.getItem(SAVED_RECIPIENTS_KEY);
+      return data ? JSON.parse(data) : [];
+    } catch {
+      return [];
+    }
+  },
+
+  saveRecipient(recipient: SavedRecipient): void {
+    const recipients = this.getSavedRecipients();
+    // Update if exists, otherwise add
+    const existingIndex = recipients.findIndex(r => r.walletId === recipient.walletId);
+    if (existingIndex >= 0) {
+      recipients[existingIndex] = { ...recipient, lastUsed: new Date().toISOString() };
+    } else {
+      recipients.push({ ...recipient, id: `saved-${Date.now()}`, lastUsed: new Date().toISOString() });
+    }
+    localStorage.setItem(SAVED_RECIPIENTS_KEY, JSON.stringify(recipients));
+  },
+
+  removeSavedRecipient(walletId: string): void {
+    const recipients = this.getSavedRecipients().filter(r => r.walletId !== walletId);
+    localStorage.setItem(SAVED_RECIPIENTS_KEY, JSON.stringify(recipients));
+  },
+
+  // --- Recent Transfers (Local Storage) ---
+  getRecentTransfers(): RecentTransfer[] {
+    try {
+      const data = localStorage.getItem(RECENT_TRANSFERS_KEY);
+      return data ? JSON.parse(data) : [];
+    } catch {
+      return [];
+    }
+  },
+
+  addRecentTransfer(transfer: Omit<RecentTransfer, 'timestamp'>): void {
+    const recents = this.getRecentTransfers();
+    // Remove duplicate if exists
+    const filtered = recents.filter(r => r.walletId !== transfer.walletId);
+    // Add to front
+    filtered.unshift({ ...transfer, timestamp: new Date().toISOString() });
+    // Keep only last 10
+    const limited = filtered.slice(0, 10);
+    localStorage.setItem(RECENT_TRANSFERS_KEY, JSON.stringify(limited));
   },
 };
 

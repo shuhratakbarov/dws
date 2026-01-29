@@ -45,6 +45,9 @@ server:
     include-binding-errors: always
 
 services:
+  auth:
+    url: ${AUTH_SERVICE_URL:http://localhost:8081}
+    enabled: ${AUTH_SERVICE_ENABLED:true}
   ledger:
     url: ${LEDGER_SERVICE_URL:http://localhost:8084}
     enabled: ${LEDGER_SERVICE_ENABLED:true}

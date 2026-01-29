@@ -132,5 +132,24 @@ public class AuthController {
         authService.validateAccessToken(token);
         return ResponseEntity.ok().build();
     }
+
+    @Operation(
+            summary = "Look up user by email",
+            description = "Returns user ID for given email (used by internal services)"
+    )
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "User found"),
+            @ApiResponse(responseCode = "404", description = "User not found")
+    })
+    @GetMapping("/users/lookup")
+    public ResponseEntity<UserLookupResponse> lookupUserByEmail(
+            @RequestParam String email
+    ) {
+        return authService.findUserByEmail(email)
+                .map(user -> ResponseEntity.ok(new UserLookupResponse(user.getId(), user.getEmail())))
+                .orElse(ResponseEntity.notFound().build());
+    }
+
+    public record UserLookupResponse(java.util.UUID userId, String email) {}
 }
 

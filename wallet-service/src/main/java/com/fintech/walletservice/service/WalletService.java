@@ -70,6 +70,13 @@ public class WalletService {
     }
 
     /**
+     * Find wallet by user ID and currency.
+     */
+    public java.util.Optional<Wallet> findByUserIdAndCurrency(UUID userId, Wallet.Currency currency) {
+        return walletRepository.findByUserIdAndCurrency(userId, currency);
+    }
+
+    /**
      * Deposit funds into wallet.
      * IDEMPOTENT: Same idempotency key = same result.
      */

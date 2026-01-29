@@ -1,5 +1,6 @@
 package com.fintech.walletservice.controller;
 
+import com.fintech.walletservice.client.AuthClient;
 import com.fintech.walletservice.domain.LedgerEntry;
 import com.fintech.walletservice.domain.Wallet;
 import com.fintech.walletservice.dto.request.CreateWalletForMeRequest;
@@ -27,6 +28,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 @RestController
@@ -36,6 +38,7 @@ import java.util.UUID;
 public class WalletController {
 
     private final WalletService walletService;
+    private final AuthClient authClient;
 
     @Operation(
             summary = "Create a new wallet",
@@ -318,6 +321,49 @@ public class WalletController {
                 .getTransactionHistory(walletId, pageable)
                 .map(LedgerEntryResponse::from);
         return ResponseEntity.ok(history);
+    }
+
+    @Operation(
+            summary = "Find wallet by user email and currency",
+            description = "Looks up a wallet by the owner's email and currency (for transfers)"
+    )
+    @ApiResponses({
+            @ApiResponse(
+                    responseCode = "200",
+                    description = "Wallet found",
+                    content = @Content(schema = @Schema(implementation = WalletResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "404",
+                    description = "User or wallet not found",
+                    content = @Content(schema = @Schema(implementation = ErrorResponse.class))
+            )
+    })
+    @GetMapping("/find")
+    public ResponseEntity<WalletResponse> findWalletByEmail(
+            @Parameter(description = "User email", example = "john@example.com")
+            @RequestParam String email,
+            @Parameter(description = "Currency code", example = "USD")
+            @RequestParam String currency
+    ) {
+        // First, look up the user ID by email
+        Optional<UUID> userIdOpt = authClient.findUserIdByEmail(email);
+        if (userIdOpt.isEmpty()) {
+            return ResponseEntity.notFound().build();
+        }
+
+        // Then find the wallet for that user and currency
+        try {
+            Wallet.Currency walletCurrency = Wallet.Currency.valueOf(currency.toUpperCase());
+            Optional<Wallet> walletOpt = walletService.findByUserIdAndCurrency(userIdOpt.get(), walletCurrency);
+
+            return walletOpt
+                    .filter(w -> w.getStatus() == Wallet.WalletStatus.ACTIVE)
+                    .map(w -> ResponseEntity.ok(WalletResponse.from(w)))
+                    .orElse(ResponseEntity.notFound().build());
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().build();
+        }
     }
 
 }

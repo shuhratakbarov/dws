@@ -176,5 +176,12 @@ public class AuthService {
                 user.getLastName()
         );
     }
+
+    /**
+     * Find user by email (for internal service lookups).
+     */
+    public java.util.Optional<User> findUserByEmail(String email) {
+        return userRepository.findByEmail(email);
+    }
 }
 
